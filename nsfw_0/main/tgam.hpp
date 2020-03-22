@@ -27,6 +27,10 @@
 #define ASIC_EEG_POWER_CODE 0x83
 #define RAW_SIGNAL_PAYLOAD_OFFSET 2
 
+// Pack unpack
+#define UNPACK_TIME(packed) uint16_t(packed >> 16)
+#define UNPACK_SIGNAL(packed) int16_t(packed & 0xFFFF)
+
 struct TGAMSharedData
 {
     // pack
@@ -37,10 +41,11 @@ struct TGAMSharedData
     uint8_t signal_quality;
     uint8_t blink_strength;
     QueueHandle_t uart_queue;
-    RingbufHandle_t raw_signal;
+    RingbufHandle_t raw_signal; // One buffer for signal and time
     int16_t signal_sample;
-    RingbufHandle_t time_points;
+    //RingbufHandle_t time_points;
     uint16_t time_sample;
+    uint32_t timed_sample;
     // uint64_t start_time;
     struct timeval current_time;
 };
@@ -61,8 +66,8 @@ private:
     // event queue settings
     const int queue_size = 128;  
     // raw signal buffer size
-    const int raw_signal_buffer_size = 2048;
-    const int time_points_buffer_size = 2048; 
+    const int raw_signal_buffer_size = 4048;
+    //const int time_points_buffer_size = 2048; 
 
 public:
 

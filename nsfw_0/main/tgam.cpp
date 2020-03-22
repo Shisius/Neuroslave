@@ -13,7 +13,7 @@ TGAM::TGAM()
     shared_data = new TGAMSharedData();
     shared_data->tgam_pack = (uint8_t *)calloc(1, MAX_TGAM_PACK_SIZE);
     shared_data->raw_signal = xRingbufferCreate(raw_signal_buffer_size, RINGBUF_TYPE_NOSPLIT);
-    shared_data->time_points = xRingbufferCreate(time_points_buffer_size, RINGBUF_TYPE_NOSPLIT);
+    //shared_data->time_points = xRingbufferCreate(time_points_buffer_size, RINGBUF_TYPE_NOSPLIT);
     //debug = true;
 }
 
@@ -132,13 +132,16 @@ void TGAM::parse_tgam_pack(TGAMSharedData * shared_data)
                 shared_data->signal_sample = (shared_data->tgam_pack[pack_position + RAW_SIGNAL_PAYLOAD_OFFSET] << 8) | 
                     shared_data->tgam_pack[pack_position + RAW_SIGNAL_PAYLOAD_OFFSET + 1];
                 // send sample to ring buffer
-                xRingbufferSend(shared_data->raw_signal, &shared_data->signal_sample, sizeof(int16_t), pdMS_TO_TICKS(1));
+                //xRingbufferSend(shared_data->raw_signal, &shared_data->signal_sample, sizeof(int16_t), pdMS_TO_TICKS(1));
                 // get time
                 gettimeofday(&shared_data->current_time, NULL);
                 shared_data->time_sample = uint16_t(shared_data->current_time.tv_usec);
-                xRingbufferSend(shared_data->time_points, &shared_data->time_sample, sizeof(uint16_t), pdMS_TO_TICKS(1));
+                // Send sample and time points into one buffer as one element
+                shared_data->timed_sample = (uint32_t(shared_data->time_sample) << 16) | uint16_t(shared_data->signal_sample);
+                xRingbufferSend(shared_data->raw_signal, &shared_data->timed_sample, sizeof(uint32_t), pdMS_TO_TICKS(1));
                 pack_position += 4;
-                //printf("RAW\n");
+                //printf("%d %d %d %d\n", shared_data->time_sample, shared_data->signal_sample, 
+                //        (shared_data->timed_sample) >> 16, int16_t(shared_data->timed_sample & 0xFFFF));
                 break;
             case SIGNAL_QUALITY_CODE:
                 shared_data->signal_quality = shared_data->tgam_pack[pack_position + 1];
