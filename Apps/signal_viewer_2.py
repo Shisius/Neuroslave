@@ -142,9 +142,7 @@ class UDPServer:
         else: print("WRONG LENGTH")
         #print("Q: %d, A: %d, M: %d" % (self.msg.signal_quality,
         #                               self.msg.attention, self.msg.meditation))
-
-    def __del__(self):
-        self.socket.close()
+        
 
     def start(self):
         print("UDP started")
@@ -270,8 +268,8 @@ class SignalViewer(Tk):
         self.value_frame.grid(row = 0, column = 0)
         self.signal_frame.grid(row = 0, column = 1)
         # UDP
-        self.udp_port = ('44:44:1B:04:0E:93', 1) #9999
-        self.udp_server = RFCOMMClient(self.udp_port)
+        self.udp_port = 9999
+        self.udp_server = UDPServer(self.udp_port)
         self.n_signal_samples = 2000
         self.signal_limits = [-2**11, 2**11]
         self.spectrum_limits = [0, 10000]
