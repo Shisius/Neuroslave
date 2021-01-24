@@ -47,6 +47,7 @@ class GanglionControl:
     RAW33_LENGTH = 33
     RAW33_HEADER_B = b'\xA0'
     N_EEG_CHANNELS = 4
+    RESOLUTION_BITS = 24
     PARSE_FOOTER = {0xc0: lambda s: s.parse_footer(),
                     0xc1: lambda s: s.parse_footer(),
                     0xc2: lambda s: s.parse_footer(),
@@ -84,36 +85,37 @@ class GanglionControl:
         self.tcp_host_sock.bind(('', self.tcp_settings['port']))
         self.tcp_host_sock.listen(1)
         self.set_sample_rate_tcp(self.sample_rate)
-        self.http_response += requests.post('http://' + self.ganglion_ip + '/tcp', data = json.dumps(self.tcp_settings))
+        self.http_response += requests.post('http://' + self.ganglion_ip + '/tcp', data = json.dumps(self.tcp_settings)).text
         self.tcp_remote_sock, tcp_remote_address = self.tcp_host_sock.accept()
 
     def start_tcp(self):
         self.expected_sample_index = 0
         self.reading = True
-        self.http_response = requests.get('http://' + self.ganglion_ip + '/stream/start')
+        self.http_response = requests.get('http://' + self.ganglion_ip + '/stream/start').text
 
     def stop_tcp(self):
         self.reading = False
-        self.http_response = requests.get('http://' + self.ganglion_ip + '/stream/stop')
+        self.http_response = requests.get('http://' + self.ganglion_ip + '/stream/stop').text
 
     def close_tcp(self):
         self.tcp_remote_sock.close()
+        self.tcp_host_sock.close()
 
     def set_sample_rate_tcp(self, sample_rate):
         if sample_rate in self.SPS_CMD.keys():
             self.http_response = requests.post('http://' + self.ganglion_ip + '/command',
-                                               data = b'~' + self.SPS_CMD[sample_rate])
+                                               data = b'~' + self.SPS_CMD[sample_rate]).text
             for new_sample_rate in re.findall(r'\d+', self.http_response):
                 if int(new_sample_rate) in self.SPS_CMD.keys():
                     self.sample_rate = int(new_sample_rate)
 
     def read_raw33(self):
-        self.bin_pack = self.tcp_remote_sock.read(self.RAW33_LENGTH)
+        self.bin_pack = self.tcp_remote_sock.recv(self.RAW33_LENGTH)
 
     def find_read_raw33(self):
-        while self.tcp_remote_sock.read(1) != self.RAW33HEADER_B:
+        while (self.tcp_remote_sock.recv(1) != self.RAW33HEADER_B) and self.reading:
             pass
-        self.bin_pack = self.RAW33HEADER_B + self.tcp_remote_sock.read(self.RAW33_LENGTH - 1)
+        self.bin_pack = self.RAW33HEADER_B + self.tcp_remote_sock.recv(self.RAW33_LENGTH - 1)
 
     def parse_raw33(self):
         if self.bin_pack[0] != self.RAW33HEADER:
