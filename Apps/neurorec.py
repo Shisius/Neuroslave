@@ -67,6 +67,8 @@ class GanglionControl:
         self.eeg_buffer_depth = 1024
         # Socket
         self.tcp_host_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+        self.tcp_host_sock.setblocking(False)
+        self.tcp_host_sock.settimeout(1)
         self.tcp_remote_sock = None
         # Data
         self.eeg_buffer = dict(zip(self.channels_position.keys(),
@@ -74,6 +76,8 @@ class GanglionControl:
         self.eeg_times_buffer = deque([0]*self.eeg_buffer_depth, maxlen = self.eeg_buffer_depth)
         self.eeg_record = dict(SOUND_EEG_DATA)
         # State
+        self.connected = False
+        self.error = ''
         self.reading = False
         self.recording = False
         self.expected_sample_index = 0
@@ -86,7 +90,11 @@ class GanglionControl:
         self.tcp_host_sock.listen(1)
         self.set_sample_rate_tcp(self.sample_rate)
         self.http_response += requests.post('http://' + self.ganglion_ip + '/tcp', data = json.dumps(self.tcp_settings)).text
-        self.tcp_remote_sock, tcp_remote_address = self.tcp_host_sock.accept()
+        try:
+            self.tcp_remote_sock, tcp_remote_address = self.tcp_host_sock.accept()
+            self.connected = True
+        except:
+            self.error = 'Connection failed'
 
     def start_tcp(self):
         self.expected_sample_index = 0
@@ -100,6 +108,7 @@ class GanglionControl:
     def close_tcp(self):
         self.tcp_remote_sock.close()
         self.tcp_host_sock.close()
+        self.connected = False
 
     def set_sample_rate_tcp(self, sample_rate):
         if sample_rate in self.SPS_CMD.keys():
