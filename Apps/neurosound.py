@@ -22,8 +22,11 @@ class SoundEEG_Control(Frame):
         self.font_size = 10
         self.fields = {}
         self.pixel = PhotoImage(width=1, height=1)
+        self.grid_propagate(False)
+        self.columnconfigure(0, weight = 10)
 
     def update_fields(self):
+        
         for f in self.fields.values():
             f['width'] = self['width']
             f['height'] = self['height'] // len(self.fields.values())
@@ -61,6 +64,7 @@ class SoundEEG_GUI(Tk):
 
     def __init__(self, height = 400, width = 1000):
         Tk.__init__(self)
+        self.title("SoundEEG")
         self.height = height
         self.width = width
         self.width_ratio = 7
@@ -74,6 +78,7 @@ class SoundEEG_GUI(Tk):
         self.control_fields = dict(self.DEFAULT_CTL_FIELDS)
         self.control_fields['connect']['command'] = self.connect
         self.control_fields['choose_wav']['command'] = self.choose_wav
+        self.control_fields['play+EEG']['command'] = self.playEEG
         # Objects
         self.wav_player = wavplayer.WavPlayer()
         self.bci_comm = neurorec.GanglionControl()
@@ -137,6 +142,9 @@ class SoundEEG_GUI(Tk):
     def choose_wav(self):
         self.wav_player.choose_wav()
         self.control_frame.fields['current_wav']['text'] = self.wav_player.session_name
+
+    def playEEG(self):
+        self.wav_player.play()
 
 
 
