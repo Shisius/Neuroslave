@@ -3,14 +3,15 @@ import neurorec
 reload(neurorec)
 import wavplayer
 import sys
-#PyToolsPath = "/home/shisius/Projects/PyTools"
-PyToolsPath = "../../radarlib/scripts"
+PyToolsPath = "/home/shisius/Projects/PyTools"
+#PyToolsPath = "../../radarlib/scripts"
 if not(PyToolsPath in sys.path):
     sys.path.append(PyToolsPath)
 import drawer
 import numpy as np
 from tkinter import *
 import time
+import json
 
 
 
@@ -94,18 +95,22 @@ class SoundEEG_GUI(Tk):
     def update_frames(self):
         self.control_frame['height'] = self.height
         self.control_frame['width'] = self.width // (self.width_ratio + 1)
-        self.control_frame.update_fields()
+        #self.control_frame.update_fields()
         for c in self.signal_frame.canvases.values():
             c['height'] = self.height // len(self.signal_frame.canvases.values())
             c['width'] = self.width * self.width_ratio // (self.width_ratio + 1)
         self.width = self.control_frame['width'] + self.signal_frame['width']
 
     def update(self):
-        self.height = self.winfo_height() - 14
-        self.width = self.winfo_width() - 14
-        self.update_frames()
-        self.update_curves()
-        Tk.update(self)
+        if self.bci_comm.reading:
+            self.bci_comm.find_read_raw33()
+            self.bci_comm.parse_raw33()
+        #self.height = self['height']#self.winfo_height() - 14
+        #self.width = self['width']#self.winfo_width() - 14
+        #self.update_frames()
+        if self.bci_comm.expected_sample_index == 0:
+            self.update_curves()
+            Tk.update(self)
 
     def setup_control_frame(self):
         for f in self.control_fields:
@@ -125,30 +130,64 @@ class SoundEEG_GUI(Tk):
                                                                                     2**(self.bci_comm.RESOLUTION_BITS-1)]
         self.signal_frame.add_task('update', self.bci_comm.channels_position[0],
                                    func = self.update, period_ms = 0)
-        #self.signal_frame.tasks['update'].start()
+        self.signal_frame.tasks['update'].start()
+
+    def set_scale(self, new_scale_x, new_scale_y):
+        for ch in self.bci_comm.channels_position.keys():
+            self.signal_frame.curves[self.bci_comm.channels_position[ch]].scaleX = [0, new_scale_x]
+            self.signal_frame.curves[self.bci_comm.channels_position[ch]].scaleY = [-new_scale_y, new_scale_y]
 
     def connect(self):
         if not self.bci_comm.connected:
             self.bci_comm.setup_tcp()
-            self.control_frame.fields['connection_response'] = bci_comm.http_response
+            self.control_frame.fields['connection_response'] = self.bci_comm.http_response
             if self.bci_comm.connected:
                 self.control_frame.fields['connect']['text'] = 'disconnect'
             else:
                 self.control_frame.fields['connect']['text'] = self.bci_comm.error
+                return
         else:
+            self.bci_comm.stop_tcp()
             self.bci_comm.close_tcp()
             self.control_frame.fields['connect']['text'] = 'connect'
+            return
+        self.bci_comm.start_tcp()
+        print('Start reading process')
+        #self.bci_comm.reading_process_tcp()
 
     def choose_wav(self):
         self.wav_player.choose_wav()
         self.control_frame.fields['current_wav']['text'] = self.wav_player.session_name
 
     def playEEG(self):
-        self.wav_player.play()
-
+        #self.wav_player.play()
+        if not self.bci_comm.recording:
+            self.bci_comm.recording = True
+            self.control_frame.fields['play+EEG']['text'] = 'stop'
+        else:
+            self.bci_comm.recording = False
+            fd = open('sample.eeg', 'wb')
+            self.bci_comm.eeg_record['sample_rate'] = self.bci_comm.sample_rate
+            fd.write(bytes(json.dumps(self.bci_comm.eeg_record), encoding = 'UTF-8'))
+            self.bci_comm.eeg_record = dict(bci_comm.SOUND_EEG_DATA)
+            self.control_frame.fields['play+EEG']['text'] = 'play+EEG'
 
 
 if __name__ == "__main__":
-    gui = SoundEEG_GUI()
+    neurorec.DEFAULT_EEG_BUFFER_DEPTH = 1500
+    gui = SoundEEG_GUI(height = 1000, width = 1900)
+    gui.bci_comm.set_sample_rate_tcp(200)
+    print(gui.bci_comm.http_response)
+    #gui.bci_comm.eeg_buffer_depth = 1500
     gui.setup()
+    gui.set_scale(500, 1000000)
+    gui.update_frames()
     gui.update()
+    
+##    while not gui.bci_comm.reading:
+##        print(gui.bci_comm.reading)
+##        time.sleep(0.1)
+##    while True:
+##        print("Reading process started")
+##        gui.bci_comm.reading_process_tcp()
+##        time.sleep(0.1)

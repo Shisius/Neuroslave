@@ -4,12 +4,14 @@ import struct
 import json
 import re
 import time
+import ctypes
 from collections import deque
 
-DEFAULT_SAMPLE_RATE = 1600
+DEFAULT_SAMPLE_RATE = 200
 DEFAULT_TCP_PORT = 9239
-DEFAULT_GANGLION_IP = '192.168.1.248'
-DEFAULT_USER_IP = '192.168.1.121'
+DEFAULT_EEG_BUFFER_DEPTH = 1024
+DEFAULT_GANGLION_IP = '192.168.4.1'#'192.168.1.248'
+DEFAULT_USER_IP = '192.168.4.2'#'192.168.1.121'
 DEFAULT_TCP_SETTINGS = {'port': DEFAULT_TCP_PORT,
                         'ip': DEFAULT_USER_IP,
                         'delimiter': True,
@@ -31,7 +33,8 @@ SOUND_EEG_DATA  =  {'sample_rate': 0,
 EEG_EXT = '.eeg'
 
 def sample24toInt(sample_bytes):
-    return (sample_bytes[0] << 16) + (sample_bytes[1] << 8) + sample_bytes[2]
+    return int.from_bytes(sample_bytes, byteorder='big', signed=True)
+
 
 class GanglionControl:
 
@@ -64,15 +67,16 @@ class GanglionControl:
         self.tcp_settings['ip'] = DEFAULT_USER_IP
         self.ganglion_ip = DEFAULT_GANGLION_IP
         self.channels_position = dict(DEFAULT_CHANNELS_POSITION)
-        self.eeg_buffer_depth = 1024
+        self.eeg_buffer_depth = DEFAULT_EEG_BUFFER_DEPTH
         # Socket
         self.tcp_host_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
         self.tcp_host_sock.setblocking(False)
         self.tcp_host_sock.settimeout(1)
         self.tcp_remote_sock = None
         # Data
-        self.eeg_buffer = dict(zip(self.channels_position.keys(),
-                                   [deque([0]*self.eeg_buffer_depth, maxlen = self.eeg_buffer_depth)] * len(self.channels_position.keys())))
+        self.eeg_buffer = dict()
+        for k in self.channels_position.keys():
+            self.eeg_buffer[k] = deque([0]*self.eeg_buffer_depth, maxlen = self.eeg_buffer_depth)
         self.eeg_times_buffer = deque([0]*self.eeg_buffer_depth, maxlen = self.eeg_buffer_depth)
         self.eeg_record = dict(SOUND_EEG_DATA)
         # State
@@ -119,21 +123,24 @@ class GanglionControl:
                     self.sample_rate = int(new_sample_rate)
 
     def read_raw33(self):
-        self.bin_pack = self.tcp_remote_sock.recv(self.RAW33_LENGTH)
+        self.bin_pack = self.tcp_remote_sock.recv(GanglionControl.RAW33_LENGTH)
 
     def find_read_raw33(self):
-        while (self.tcp_remote_sock.recv(1) != self.RAW33HEADER_B) and self.reading:
+        while (self.tcp_remote_sock.recv(1) != GanglionControl.RAW33_HEADER_B) and self.reading:
+            print('No eeg packs')
             pass
-        self.bin_pack = self.RAW33HEADER_B + self.tcp_remote_sock.recv(self.RAW33_LENGTH - 1)
+        self.bin_pack = self.RAW33_HEADER_B + self.tcp_remote_sock.recv(self.RAW33_LENGTH - 1)
 
     def parse_raw33(self):
-        if self.bin_pack[0] != self.RAW33HEADER:
+        if self.bin_pack[0] != self.RAW33_HEADER:
             print('Wrong raw33 pack header')
             return -1
         current_sample_index = self.bin_pack[1]
         if current_sample_index != self.expected_sample_index:
-            print('Expected = ' + str(self.expected_sample_index) + ' Current = ' + current_sample_index)
-        self.expected_sample_index = (current_sample_index + 1) & 0xFF
+            print('Expected = ' + str(self.expected_sample_index) + ' Current = ' + str(current_sample_index))
+        self.expected_sample_index = current_sample_index + 1
+        if self.expected_sample_index > 0xc8: #(current_sample_index + 1) & 0xFF
+            self.expected_sample_index = 0
         # Parse EEG data
         for ch in range(self.N_EEG_CHANNELS):
             sample = sample24toInt(self.bin_pack[2 + 3*ch:5 + 3*ch])
@@ -145,6 +152,7 @@ class GanglionControl:
         while self.reading:
             self.find_read_raw33()
             self.parse_raw33()
+            #time.sleep(0.0001)
         
     def parse_footer(self):
         pass
