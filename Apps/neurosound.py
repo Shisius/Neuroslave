@@ -3,8 +3,8 @@ import neurorec
 reload(neurorec)
 import wavplayer
 import sys
-PyToolsPath = "/home/shisius/Projects/PyTools"
-#PyToolsPath = "../../radarlib/scripts"
+#PyToolsPath = "/home/shisius/Projects/PyTools"
+PyToolsPath = "../../radarlib/scripts"
 if not(PyToolsPath in sys.path):
     sys.path.append(PyToolsPath)
 import drawer
@@ -56,7 +56,7 @@ class SoundEEG_GUI(Tk):
                           'choose_wav': {'type': 'button',
                                          'command': None,
                                          'color': '#8888FF'},
-                          'current_wav': {'type': 'text',
+                          'current_wav': {'type': 'label',
                                           'command': None,
                                           'color': '#FFFFFF'},
                           'play+EEG': {'type': 'button',
@@ -111,6 +111,9 @@ class SoundEEG_GUI(Tk):
         if self.bci_comm.expected_sample_index == 0:
             self.update_curves()
             Tk.update(self)
+        if self.wav_player.is_playing:
+            if (not self.wav_player.get_is_playing()) and self.bci_comm.recording :
+                self.stopEEG()
 
     def setup_control_frame(self):
         for f in self.control_fields:
@@ -159,35 +162,36 @@ class SoundEEG_GUI(Tk):
         self.wav_player.choose_wav()
         self.control_frame.fields['current_wav']['text'] = self.wav_player.session_name
 
+    def stopEEG(self):
+        self.bci_comm.recording = False
+        fd = open('sample.eeg', 'wb')
+        self.bci_comm.eeg_record['sample_rate'] = self.bci_comm.sample_rate
+        fd.write(bytes(json.dumps(self.bci_comm.eeg_record), encoding = 'UTF-8'))
+        self.bci_comm.eeg_record = dict(bci_comm.SOUND_EEG_DATA)
+        self.control_frame.fields['play+EEG']['text'] = 'play+EEG'
+
     def playEEG(self):
-        #self.wav_player.play()
         if not self.bci_comm.recording:
+            if self.wav_player.wave_obj != None:
+                self.wav_player.play()
             self.bci_comm.recording = True
             self.control_frame.fields['play+EEG']['text'] = 'stop'
         else:
             self.bci_comm.recording = False
-            fd = open('sample.eeg', 'wb')
-            self.bci_comm.eeg_record['sample_rate'] = self.bci_comm.sample_rate
-            fd.write(bytes(json.dumps(self.bci_comm.eeg_record), encoding = 'UTF-8'))
-            self.bci_comm.eeg_record = dict(bci_comm.SOUND_EEG_DATA)
-            self.control_frame.fields['play+EEG']['text'] = 'play+EEG'
+            if self.wav_player.is_playing:
+                if self.wav_player.get_is_playing():
+                    self.wav_player.stop()
+            self.stopEEG()
+            
 
 
 if __name__ == "__main__":
     neurorec.DEFAULT_EEG_BUFFER_DEPTH = 1500
     gui = SoundEEG_GUI(height = 1000, width = 1900)
-    gui.bci_comm.set_sample_rate_tcp(200)
-    print(gui.bci_comm.http_response)
-    #gui.bci_comm.eeg_buffer_depth = 1500
+    gui.bci_comm.sample_rate = 200
     gui.setup()
+    print(gui.bci_comm.http_response)
     gui.set_scale(500, 1000000)
     gui.update_frames()
     gui.update()
     
-##    while not gui.bci_comm.reading:
-##        print(gui.bci_comm.reading)
-##        time.sleep(0.1)
-##    while True:
-##        print("Reading process started")
-##        gui.bci_comm.reading_process_tcp()
-##        time.sleep(0.1)
