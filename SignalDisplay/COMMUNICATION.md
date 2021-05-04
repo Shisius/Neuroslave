@@ -9,7 +9,7 @@ Each message end with message ending = "\n\r"
 JSON message usually starts with structure name followed by delimiter = ':'.
 JSON message structure: "StructName:{json here}\n\r"
 Text message starts with "Message:" or "Error:" for errors or "Warning:" for warnings
-Text message example: "Message:Have a nice day, User!"
+Text message example: "Message:Have a nice day, User!\n\r"
 
 ### JSON messages types
 1. EegSession
