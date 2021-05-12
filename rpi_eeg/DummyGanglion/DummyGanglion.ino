@@ -19,15 +19,19 @@ void setup() {
     attachPinInterrupt(MCP_DRDY, MCP_DRDY_ISR, LOW);
     // SS
     pinMode(MCP_SS, OUTPUT);
-    digitalWrite(MCP_SS, HIGH);
-    pinMode(NEW_MCP_SS, INPUT);
-    digitalWrite(MCP_SS, digitalRead(NEW_MCP_SS));
-    attachPinInterrupt(NEW_MCP_SS, MCP_SS_ISR, LOW);
+    digitalWrite(MCP_SS, LOW);
+    //pinMode(NEW_MCP_SS, INPUT);
+    //digitalWrite(MCP_SS, digitalRead(NEW_MCP_SS));
+    //attachPinInterrupt(NEW_MCP_SS, MCP_SS_ISR, LOW);
     // RST
     pinMode(MCP_RST, OUTPUT); 
     digitalWrite(MCP_RST, LOW);
   	delay(100); 
   	digitalWrite(MCP_RST, HIGH);
+}
+
+void loop() {
+  ;
 }
 
 int MCP_DRDY_ISR(uint32_t unused) { 
