@@ -16,11 +16,21 @@ Text message example: "Message:Have a nice day, User!\n\r"
 	C++ Structure:
 	```
 	struct EegSession {
+		std::string tag; // Session name
 		float sample_rate; // Sample rate in Hz
 		unsigned int n_channels; // Number of data channels. This value should be equal to number of plotted curves.
 	};
 	```
-	Example: "EegSession:{"sample_rate":1000.0,"n_channels":4}\n\r"
+	Example: "EegSession:{"tag":"hep","sample_rate":1000.0,"n_channels":4}\n\r"
+
+### GUI to Neuroslave communication
+Neuroslave can receive text and json messages as commands.
+Message should have syntax like "Command:Parameter:Value\n\r".
+Value can be JSON string.
+Command types:
+1. Start. String "Start". Parameters: None.
+2. Set. String "Set". Parameter: "EegSession". Value: JSON EegSession struct representation.
+3. Stop. String "Stop". Parameters: None.
 
 ## TCP Port for binary data
 This port is used for binary messages sending from Neuroslave to GUI
