@@ -28,19 +28,25 @@ class MCP3912:
         self.spi = spidev.SpiDev(spi_bus, spi_device)
         self.spi.mode = MCP_SPI_MODE
         self.spi.max_speed_hz = MCP_SPI_HZ
+        # GPIO
+        #gpio.setmode(gpio.BOARD)
         # SS
-        gpio.setup(MCP_SS_PIN, gpio.OUT)
-        gpio.output(MCP_SS_PIN, 1)
+        #gpio.setup(MCP_SS_PIN, gpio.OUT)
+        #gpio.output(MCP_SS_PIN, 1)
         # DRDY
-        
+
+    def __del__(self):
+        spi.close()
+        gpio.cleanup()
+        print('GPIO cleaned up')  
         
     def sendcmd(self, addr, rw):
-        self.spi.xfer(MCP_CMD_DEV_ADDR | addr | rw)
+        self.spi.xfer([MCP_CMD_DEV_ADDR | addr | rw])
 
     def read(self, n_bytes = MCP_REG_N_BYTES):
         data = 0
         for i in range(n_bytes):
-            data |= self.spi.xfer(0x00)
+            data |= self.spi.xfer([0x00])[0]
             data <<= 8
         return data
         
