@@ -18,6 +18,8 @@ enum GanglionSpisCommands
 {
 	SPIS_ANSWER = 0x0,
 	SPIS_MCP_SAMPLE = 0x1,
+	SPIS_START = 0x2,
+	SPIS_STOP = 0x3,
 	SPIS_MCP_GAIN = 0x16
 };
 

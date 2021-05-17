@@ -11,7 +11,7 @@
 #define SPIS_BUF_LEN sizeof(McpSample)
 #define SPIS_DATA_READY 2
 #define MCP_SPI_KHZ 4000
-#define MCP_QUEUE_LENGTH 256
+#define MCP_QUEUE_SIZE_BL 8
 
 int32_t conv24to32(int32_t value24);
 
@@ -23,7 +23,7 @@ private:
 	// SPIS
 	char spis_rx[SPIS_BUF_LEN];
 	char spis_tx[SPIS_BUF_LEN];
-	QueueRNR<McpSample, MCP_QUEUE_LENGTH> mcp_sample_queue;
+	QueueRNR<McpSample, MCP_QUEUE_SIZE_BL> mcp_sample_queue;
 
 public:
 
@@ -46,6 +46,8 @@ public:
 	// SPIS
 	void init_spis();
 	void spis_routine(int bytes_received, bool overflow);
+	void start_stream();
+	void stop_stream();
 	// LED
 	void init_led();
 	void led_on();

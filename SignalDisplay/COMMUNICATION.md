@@ -43,8 +43,8 @@ Example:
 0xACDC0400 - Label:0xACDC, Payload length (number of channels): 0x04, Reserved: 0x00
 0x00000001 - Value in channel_1 = 1
 0xFFFFFFFF - Value in channel_2 = -1
-0x00800000 - Value in channel_3 = 2^23 (Maximum value)
-0xFF7FFFFF - Value in channel_4 = -2^23 + 1 (Minimum value)
+0x007FFFFF - Value in channel_3 = 2^23 - 1 (Maximum value)
+0xFF800000 - Value in channel_4 = -2^23 (Minimum value)
 ```
 
 ## Some notes

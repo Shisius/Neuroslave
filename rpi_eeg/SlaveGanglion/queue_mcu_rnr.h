@@ -1,17 +1,20 @@
 #ifndef _QUEUE_MCU_RNR_H_ 
 #define _QUEUE_MCU_RNR_H_
 
-template<typename T, uint32_t size>
+// size_bl - size bit length
+template<typename T, uint8_t size_bl>
 class QueueRNR
 {
 
 private:
 
-	T storage[size];
+	T storage[1 << (size_bl - 1)];
 
 	uint32_t pop_pos = 0;
 	uint32_t push_pos = 0;
 	bool lock = false;
+	uint32_t mask = (1 << (size_bl - 1)) - 1;
+	uint32_t size = 1 << (size_bl - 1);
 
 public:
 
@@ -26,63 +29,59 @@ public:
 	}
 
 	void push(T & sample) {
-		if (push_pos == pop_pos) {
-			while (lock) {}
-			lock = true;
-			memcpy(storage + push_pos, &sample, sizeof(T));
-			push_pos++;
-			lock = false;
-		} else {
-			memcpy(storage + push_pos, &sample, sizeof(T));
-			push_pos++;
-		}
+		while (lock) {}
+		lock = true;
+		push_pos++;
 		if (push_pos == size) push_pos = 0;
+		memcpy(storage + push_pos, &sample, sizeof(T));
+		lock = false;	
 	}
 
 
 	// Block pop when nothing pushed?
 	T pop() {
 		T sample;
-		if (push_pos == pop_pos) {
-			while (lock) {}
-			lock = true;
-			sample = storage[pop_pos];
-			pop_pos++;
-			lock = false;
-		} else {
-			sample = storage[pop_pos];
-			pop_pos++;
-		}
+
+		while (lock) {}
+		lock = true;
+		pop_pos++;
 		if (pop_pos == size) pop_pos = 0;
+		sample = storage[pop_pos];
+		lock = false;
+		
 		return sample;
 	}
 
 	void pop(T & sample) {
-		if (push_pos == pop_pos) {
-			while (lock) {}
-			lock = true;
-			memcpy(&sample, storage + push_pos, sizeof(T));
-			pop_pos++;
-			lock = false;
-		} else {
-			memcpy(&sample, storage + push_pos, sizeof(T));
-			pop_pos++;
-		}
+		while (lock) {}
+		lock = true;
+		pop_pos++;
 		if (pop_pos == size) pop_pos = 0;
+		memcpy(&sample, storage + pop_pos, sizeof(T));
+		lock = false;
 	}
 
 	void pop(T * sample) {
-		if (push_pos == pop_pos) {
-			while (lock) {}
-			lock = true;
-			memcpy(sample, storage + push_pos, sizeof(T));
-			pop_pos++;
-			lock = false;
-		} else {
-			memcpy(sample, storage + push_pos, sizeof(T));
-			pop_pos++;
-		}
+		while (lock) {}
+		lock = true;
+		pop_pos++;
 		if (pop_pos == size) pop_pos = 0;
+		memcpy(sample, storage + pop_pos, sizeof(T));
+		lock = false;
+	}
+
+	void pop_new(T * sample) {
+		while (!lock) {} // Wait push
+		while (lock) {}
+		lock = true;
+		pop_pos = push_pos;
+		memcpy(sample, storage + pop_pos, sizeof(T));
+		lock = false;
+	}
+
+	void pop_wait(T * sample) {
+		while (push_pos != (pop_pos + 1) & mask) {}
+		pop(T * sample);	
 	}
 
 };

@@ -41,8 +41,11 @@ void GanglionSlave::spis_routine(int bytes_received, bool overflow)
 			case SPIS_ANSWER:
 				digitalWrite(SPIS_DATA_READY, 0);
 				return;
+			case SPIS_START:
+				mcp_sample_queue.pop_new((McpSample*)spis_tx);
+				break;
 			case SPIS_MCP_SAMPLE:
-				mcp_sample_queue.pop((McpSample*)spis_tx);
+				mcp_sample_queue.pop_wait((McpSample*)spis_tx);
 				break;
 
 		}
