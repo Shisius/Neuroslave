@@ -8,22 +8,22 @@ template<typename T, uint8_t size_bl>
 class QueueRNR
 {
 
-private:
+protected:
 
-	T storage[1 << (size_bl - 1)];
+	T storage[1 << size_bl];
 
-	uint32_t pop_pos = 0;
-	uint32_t push_pos = 0;
-	std::atomic_bool lock;
-	uint32_t mask = (1 << (size_bl - 1)) - 1;
-	uint32_t size = 1 << (size_bl - 1);
+	volatile std::atomic<uint32_t> pop_pos;
+	volatile std::atomic<uint32_t> push_pos;
+	volatile std::atomic<bool> d_lock;
+	uint32_t mask = (1 << size_bl) - 1;
+	uint32_t qsize = 1 << size_bl;
 
 public:
 
 	QueueRNR() {
-		pop_pos = 0;
-		push_pos = 0;
-		lock.store(false, std::memory_order_relaxed);
+		pop_pos.store(0);
+		push_pos.store(0);
+		d_lock.store(false, std::memory_order_relaxed);
 	}
 
 	~QueueRNR() {
@@ -31,65 +31,66 @@ public:
 	}
 
 	void push(T & sample) {
-		while (lock.load(std::memory_order_relaxed)) {}
-    lock.store(true, std::memory_order_relaxed);
-		push_pos++;
-		if (push_pos == size) push_pos = 0;
-		memcpy(storage + push_pos, &sample, sizeof(T));
-		lock.store(false, std::memory_order_relaxed);	
+		//while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
+    d_lock.store(true, std::memory_order_seq_cst);
+		push_pos.store(push_pos.load() + 1);
+		if (push_pos.load() == qsize) push_pos.store(0);
+		memcpy(storage + push_pos.load(), &sample, sizeof(T));
+		d_lock.store(false, std::memory_order_seq_cst);	
 	}
 
 
 	// Block pop when nothing pushed?
-	T pop() {
-		T sample;
+//	T pop() {
+//		T sample;
+//
+//		while (d_lock.load(std::memory_order_relaxed)) {}
+//		d_lock.store(true, std::memory_order_relaxed);
+//		pop_pos++;
+//		if (pop_pos == qsize) pop_pos = 0;
+//		sample = storage[pop_pos];
+//		d_lock.store(false, std::memory_order_relaxed);
+//		
+//		return sample;
+//	}
 
-		while (lock.load(std::memory_order_relaxed)) {}
-		lock.store(true, std::memory_order_relaxed);
-		pop_pos++;
-		if (pop_pos == size) pop_pos = 0;
-		sample = storage[pop_pos];
-		lock.store(false, std::memory_order_relaxed);
-		
-		return sample;
-	}
-
-	void pop(T & sample) {
-		while (lock.load(std::memory_order_relaxed)) {}
-		lock.store(true, std::memory_order_relaxed);
-		pop_pos++;
-		if (pop_pos == size) pop_pos = 0;
-		memcpy(&sample, storage + pop_pos, sizeof(T));
-		lock.store(false, std::memory_order_relaxed);
-	}
+//	void pop(T & sample) {
+//		while (d_lock.load(std::memory_order_relaxed)) {}
+//		d_lock.store(true, std::memory_order_relaxed);
+//		pop_pos++;
+//		if (pop_pos == qsize) pop_pos = 0;
+//		memcpy(&sample, storage + pop_pos, sizeof(T));
+//		d_lock.store(false, std::memory_order_relaxed);
+//	}
 
 	void pop(T * sample) {
-		while (lock.load(std::memory_order_relaxed)) {}
-		lock.store(true, std::memory_order_relaxed);
-		pop_pos++;
-		if (pop_pos == size) pop_pos = 0;
-		memcpy(sample, storage + pop_pos, sizeof(T));
-		lock.store(false, std::memory_order_relaxed);
+		//while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
+		d_lock.store(true, std::memory_order_seq_cst);
+		pop_pos.store(pop_pos.load() + 1);
+		if (pop_pos.load() == qsize) pop_pos.store(0);
+		memcpy(sample, storage + pop_pos.load(), sizeof(T));
+		d_lock.store(false, std::memory_order_seq_cst);
 	}
 
 	void pop_new(T * sample) {
-		while (!lock.load(std::memory_order_relaxed)) {} // Wait push
-		while (lock.load(std::memory_order_relaxed)) {}
-		lock.store(true, std::memory_order_relaxed);
-		pop_pos = push_pos;
-		memcpy(sample, storage + pop_pos, sizeof(T));
-		lock.store(false, std::memory_order_relaxed);
+		while (!(d_lock.load(std::memory_order_relaxed))) {delay(1);} // Wait push
+		while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
+		d_lock.store(true, std::memory_order_relaxed);
+		pop_pos.store(push_pos.load());
+		memcpy(sample, storage + pop_pos.load(), sizeof(T));
+		d_lock.store(false, std::memory_order_relaxed);
 	}
 
 	void pop_wait(T * sample) {
 		while (true) {
-        while (lock.load(std::memory_order_relaxed)) {}
-        lock.store(true, std::memory_order_relaxed);
-		    if (push_pos == ((pop_pos + 1) & mask)) { 
-            lock.store(false, std::memory_order_relaxed);
+        //while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
+        d_lock.store(true, std::memory_order_seq_cst);
+		    if (push_pos.load(std::memory_order_relaxed) == ((pop_pos.load(std::memory_order_relaxed) + 1) & mask)) { 
             break;
 		    }
-        lock.store(false, std::memory_order_relaxed);
+        Serial.println(push_pos.load(std::memory_order_relaxed));
+        d_lock.store(false, std::memory_order_seq_cst);
+        
 		}
 		pop(sample);	
 	}

@@ -104,14 +104,10 @@ void GanglionSlave::mcp_write_register(uint32_t settings)
 void GanglionSlave::mcp_process_data()
 {
 	McpSample new_sample;
-//  int32_t tmp_sample;
 	// Read sample from MCP3912
 	digitalWrite(MCP_SS, LOW);
 	mcp_send_cmd(CHAN_0, MCP_READ);
 	for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
-//    tmp_sample = mcp_read_register();
-//    tmp_sample = conv24to32(tmp_sample);
-//		memcpy(new_sample.eeg_data + i, &tmp_sample, sizeof(int32_t));
     new_sample.eeg_data[i] = conv24to32(mcp_read_register());
 	}
 	digitalWrite(MCP_SS, HIGH);

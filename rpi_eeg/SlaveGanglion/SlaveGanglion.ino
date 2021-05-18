@@ -19,7 +19,6 @@ void loop() {
 			ganglion.mcp_data_ready = false;
 		} 
 	}
-
 }
 
 void SPIS_onReceive(int bytes_received, bool overflow)
@@ -35,5 +34,5 @@ void MCP_ISR() {
 
 	ganglion.mcp_data_ready = true;
 	ganglion.mcp_sample_counter++;
- 
+  
 }
