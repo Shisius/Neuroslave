@@ -3,6 +3,7 @@ import struct
 import json
 import random
 import time
+import math
 import multiprocessing as mp
 from nsv_def import *
 
@@ -19,11 +20,13 @@ def data_process(flag):
     dataSock.bind(('', SRV_DATA_PORT))
     dataSock.listen(1)
     clientSock, clientAddr = dataSock.accept()
+    counter = 0
     while flag.value != 0:
         if flag.value == 1:
-            data = [int(random.random() * 1000)] * 4
+            counter += 1
+            data = [int(math.sin(counter * 2 * math.pi * 0.001) * 1000)] * 4
             clientSock.send(EegSamplePack(data))
-            time.sleep(0.01)
+            time.sleep(0.001)
         else:
             time.sleep(1)
     clientSock.close()
@@ -44,9 +47,9 @@ class NeuroslaveTcpServer:
         self.data_srv_running = MP_CTX.Value('i', 0)
 
     def __del__(self):
-        self.stop()
+        self.terminate()
 
-    def stop(self):
+    def terminate(self):
         self.srv_running = False
         try:
             self.clientSock.close()

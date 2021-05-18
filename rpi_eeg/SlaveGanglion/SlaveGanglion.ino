@@ -8,7 +8,7 @@ volatile int spis_cnt = 0;
 void setup() {
   Serial.begin(115200);
 	ganglion.init();
-	attachPinInterrupt(MCP_DRDY, MCP_ISR, LOW);
+	attachInterrupt(MCP_DRDY, MCP_ISR, LOW);
   Serial.println("Neuroslave 2.0");
 } 
 
@@ -31,10 +31,9 @@ void SPIS_onReceive(int bytes_received, bool overflow)
   
 }
 
-int MCP_ISR(uint32_t unused) { 
+void MCP_ISR() { 
 
 	ganglion.mcp_data_ready = true;
 	ganglion.mcp_sample_counter++;
-
-	return 0; 
+ 
 }
