@@ -26,7 +26,7 @@ void SPIS_onReceive(int bytes_received, bool overflow)
 {
 	if (bytes_received <= 0)
 		return;
-  
+  Serial.println("spis routine");
 	ganglion.spis_routine(bytes_received, overflow);
   
 }

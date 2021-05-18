@@ -12,7 +12,7 @@ private:
 
 	uint32_t pop_pos = 0;
 	uint32_t push_pos = 0;
-	bool lock = false;
+	volatile bool lock = false;
 	uint32_t mask = (1 << (size_bl - 1)) - 1;
 	uint32_t size = 1 << (size_bl - 1);
 
@@ -80,8 +80,8 @@ public:
 	}
 
 	void pop_wait(T * sample) {
-		while (push_pos != (pop_pos + 1) & mask) {}
-		pop(T * sample);	
+		while (push_pos != ((pop_pos + 1) & mask)) {}
+		pop(sample);	
 	}
 
 };

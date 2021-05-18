@@ -5,13 +5,14 @@ import json
 import re
 import time
 import ctypes
+import copy
 from collections import deque
 
 DEFAULT_SAMPLE_RATE = 200
 DEFAULT_TCP_PORT = 9239
 DEFAULT_EEG_BUFFER_DEPTH = 1024
-DEFAULT_GANGLION_IP = '192.168.4.1'#'192.168.1.248'
-DEFAULT_USER_IP = '192.168.4.2'#'192.168.1.121'
+DEFAULT_GANGLION_IP = '192.168.1.248'
+DEFAULT_USER_IP = '192.168.1.121'
 DEFAULT_TCP_SETTINGS = {'port': DEFAULT_TCP_PORT,
                         'ip': DEFAULT_USER_IP,
                         'delimiter': True,
@@ -66,7 +67,7 @@ class GanglionControl:
         self.tcp_settings['port'] = DEFAULT_TCP_PORT
         self.tcp_settings['ip'] = DEFAULT_USER_IP
         self.ganglion_ip = DEFAULT_GANGLION_IP
-        self.channels_position = dict(DEFAULT_CHANNELS_POSITION)
+        self.channels_position = copy.deepcopy(DEFAULT_CHANNELS_POSITION)
         self.eeg_buffer_depth = DEFAULT_EEG_BUFFER_DEPTH
         # Socket
         self.tcp_host_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
@@ -78,7 +79,7 @@ class GanglionControl:
         for k in self.channels_position.keys():
             self.eeg_buffer[k] = deque([0]*self.eeg_buffer_depth, maxlen = self.eeg_buffer_depth)
         self.eeg_times_buffer = deque([0]*self.eeg_buffer_depth, maxlen = self.eeg_buffer_depth)
-        self.eeg_record = dict(SOUND_EEG_DATA)
+        self.eeg_record = copy.deepcopy(SOUND_EEG_DATA)
         # State
         self.connected = False
         self.error = ''
@@ -118,6 +119,7 @@ class GanglionControl:
         if sample_rate in self.SPS_CMD.keys():
             self.http_response = requests.post('http://' + self.ganglion_ip + '/command',
                                                data = b'~' + self.SPS_CMD[sample_rate]).text
+            print(self.http_response)
             for new_sample_rate in re.findall(r'\d+', self.http_response):
                 if int(new_sample_rate) in self.SPS_CMD.keys():
                     self.sample_rate = int(new_sample_rate)

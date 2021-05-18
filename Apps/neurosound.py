@@ -3,8 +3,8 @@ import neurorec
 reload(neurorec)
 import wavplayer
 import sys
-#PyToolsPath = "/home/shisius/Projects/PyTools"
-PyToolsPath = "../../radarlib/scripts"
+PyToolsPath = "/home/shisius/Projects/PyTools"
+#PyToolsPath = "../../radarlib/scripts"
 if not(PyToolsPath in sys.path):
     sys.path.append(PyToolsPath)
 import drawer
@@ -12,6 +12,7 @@ import numpy as np
 from tkinter import *
 import time
 import json
+import copy
 
 
 
@@ -90,7 +91,7 @@ class SoundEEG_GUI(Tk):
 
     def update_curves(self):
         for ch in self.bci_comm.channels_position.keys():
-            self.signal_frame.curves[self.bci_comm.channels_position[ch]].update(pointsY = np.array(self.bci_comm.eeg_buffer[ch]))
+            self.signal_frame.curves[self.bci_comm.channels_position[ch]].update(pointsY = np.array(self.bci_comm.eeg_buffer[ch] - np.mean(self.bci_comm.eeg_buffer[ch])))
 
     def update_frames(self):
         self.control_frame['height'] = self.height
@@ -164,10 +165,15 @@ class SoundEEG_GUI(Tk):
 
     def stopEEG(self):
         self.bci_comm.recording = False
-        fd = open('sample.eeg', 'wb')
+        if self.wav_player.session_name == '':
+            self.wav_player.session_name = 'sample'
+        fd = open(self.wav_player.session_name + '.eeg', 'wb')
         self.bci_comm.eeg_record['sample_rate'] = self.bci_comm.sample_rate
         fd.write(bytes(json.dumps(self.bci_comm.eeg_record), encoding = 'UTF-8'))
-        self.bci_comm.eeg_record = dict(bci_comm.SOUND_EEG_DATA)
+        fd.close()
+        self.bci_comm.eeg_record.clear()
+        self.bci_comm.eeg_record = copy.deepcopy(neurorec.SOUND_EEG_DATA)
+        print(self.bci_comm.eeg_record)
         self.control_frame.fields['play+EEG']['text'] = 'play+EEG'
 
     def playEEG(self):
@@ -191,7 +197,7 @@ if __name__ == "__main__":
     gui.bci_comm.sample_rate = 200
     gui.setup()
     print(gui.bci_comm.http_response)
-    gui.set_scale(500, 1000000)
+    gui.set_scale(500, 500000)
     gui.update_frames()
     gui.update()
     
