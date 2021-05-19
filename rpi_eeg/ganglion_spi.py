@@ -3,9 +3,12 @@ import spidev
 import struct
 import time
 import multiprocessing as mp
+import numpy as np
+import sys
+import os
 
 GANG_SPIS_MODE = 0
-GANG_SPIS_HZ = 4000000
+GANG_SPIS_HZ = 10000000
 
 GANG_DRDY_PIN = 25
 
@@ -17,11 +20,17 @@ GANG_SAMPLE_RULE = 'I4iI'
 class GanglionSpiComm:
 
     def __init__(self, spi_bus = 0, spi_device = 0, data_queue = None):
+        set_priority="sudo renice -n -20 -p "
+        mypid = os.getpid()
+        ret = os.system(set_priority+str(mypid))
+        sys.setcheckinterval(1000);
         # SPI
         self.spi = spidev.SpiDev(spi_bus, spi_device)
         self.spi.mode = GANG_SPIS_MODE
         self.spi.max_speed_hz = GANG_SPIS_HZ
         # GPIO
+        gpio.setwarnings(False)
+        gpio.cleanup()
         gpio.setmode(gpio.BCM)
         gpio.setup(GANG_DRDY_PIN, gpio.IN)
         # Interaction
@@ -29,6 +38,8 @@ class GanglionSpiComm:
         # State
         self.expected_index = 0
         self.is_running = True
+        self.data_ready = False
+        self.sample_counter = 0
 
     def __del__(self):
         self.spi.close()
@@ -37,32 +48,55 @@ class GanglionSpiComm:
 
     def start(self):
         self.is_running = True
-        gpio.add_event_detect(GANG_DRDY_PIN, gpio.RISING, callback = self.drdy_routine)
+        #gpio.add_event_detect(GANG_DRDY_PIN, gpio.RISING, callback = self.drdy_routine)
         #self.spi.xfer([GANG_CMD_START])
+        self.sample_counter = 0
+        self.sample_indices = np.array([-1]*10000)
         print(self.get_sample())
+        while self.sample_counter < 10000:
+            #if self.data_ready:
+            sample_list = self.get_sample()
+            
+            #time.sleep(0.001)
+            #sample_list = struct.unpack(GANG_SAMPLE_RULE, bytes(b_data))
+            # check
+                #if sample_list[0] != self.expected_index:
+                #    print("expected:", self.expected_index, " real: ", sample_list[0])
+                #self.expected_index = sample_list[0] + 1
+                #if self.sample_counter % 1000 == 0:
+                #    print(sample_list)
+            self.sample_indices[self.sample_counter] = sample_list[0]
+            self.sample_counter += 1
+                #self.data_ready = False
+        print(self.get_sample())
+        print(self.sample_counter)
 
     def stop(self):
         self.is_running = False
         gpio.remove_event_detect(GANG_DRDY_PIN)    
 
     def get_sample(self):
+        #self.spi.writebytes([GANG_CMD_SAMPLE])
         self.spi.xfer([GANG_CMD_SAMPLE])
-        b_data = self.spi.xfer([0x00]*GANG_SAMPLE_SIZE)
+        #b_data = self.spi.xfer([0x00]*GANG_SAMPLE_SIZE)
+        b_data = self.spi.readbytes(GANG_SAMPLE_SIZE)
         return struct.unpack(GANG_SAMPLE_RULE, bytes(b_data))
 
     def drdy_routine(self, pin):
+        self.data_ready = True
+        self.sample_counter += 1
         #b_data = self.spi.xfer([0x00]*GANG_SAMPLE_SIZE)
-        b_data = self.get_sample()
-        sample_list = struct.unpack(GANG_SAMPLE_RULE, bytes(b_data))
+        #sample_list = self.get_sample()
+        #sample_list = struct.unpack(GANG_SAMPLE_RULE, bytes(b_data))
         # check
-        if sample_list[0] != self.expected_index:
-            print("expected:", self.expected_index, " real: ", sample_list[0])
-        self.expected_index = sample_list[0] + 1
-        if sample_list[0] % 1000 == 0:
-            print(sample_list)
+        #if sample_list[0] != self.expected_index:
+        #    print("expected:", self.expected_index, " real: ", sample_list[0])
+        #self.expected_index = sample_list[0] + 1
+        #if sample_list[0] % 1000 == 0:
+        #    print(sample_list)
         # store
-        if self.queue != None:
-            self.queue.put(sample_list)
+        #if self.queue != None:
+        #    self.queue.put(sample_list)
         # Ask for next
         #self.spi.xfer([GANG_CMD_SAMPLE])
 
