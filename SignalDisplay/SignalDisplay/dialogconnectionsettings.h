@@ -12,21 +12,25 @@ class DialogConnectionSettings : public QDialog
 {
     Q_OBJECT
     QString d_serverIP;
-    quint16 d_port;
+    quint16 d_port_msg;
+    quint16 d_port_sig;
 
 public:
     explicit DialogConnectionSettings(QWidget *parent = 0);
     ~DialogConnectionSettings();
     QString serverIP();
-    quint16 serverPort();
+    quint16 serverPort_msg();
+    quint16 serverPort_signal();
 
 
     void setIp(QString);
-    void setPort(quint16);
+    void setPort_msg(quint16);
+    void setPort_signal(quint16);
 
 private slots:
-    void slot_setIp();
-    void slot_setPort();
+//    void slot_setIp();
+//    void slot_setPort_msg();
+//    void slot_setPort_sig();
 
 private:
     Ui::DialogConnectionSettings *ui;

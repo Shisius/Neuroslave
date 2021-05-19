@@ -11,7 +11,8 @@ DialogConnectionSettings::DialogConnectionSettings(QWidget *parent) :
     ui->le_ip->setValidator(new QRegExpValidator(re_ip, this));
     //connect(ui->le_ip, SIGNAL(textChanged(QString)), SLOT(slot_setIp()));
     QRegExp re_port("[0-9]{1,5}");
-    ui->le_port->setValidator(new QRegExpValidator(re_port, this));
+    ui->le_port_msg->setValidator(new QRegExpValidator(re_port, this));
+    ui->le_port_sig->setValidator(new QRegExpValidator(re_port, this));
     //connect(ui->le_port, SIGNAL(textChanged(QString)), SLOT(slot_setPort_msg()));
 }
 
@@ -20,18 +21,18 @@ DialogConnectionSettings::~DialogConnectionSettings()
     delete ui;
 }
 
-void DialogConnectionSettings::slot_setIp()
-{
-    //qDebug() << "slot_setIp"<< d_serverIP;
-    d_serverIP = ui->le_ip->text().toLatin1().data();
+//void DialogConnectionSettings::slot_setIp()
+//{
+//    //qDebug() << "slot_setIp"<< d_serverIP;
+//    d_serverIP = ui->le_ip->text().toLatin1().data();
 
-    //d_serverIP = ui->le_ip->text().data();
-}
+//    //d_serverIP = ui->le_ip->text().data();
+//}
 
-void DialogConnectionSettings::slot_setPort()
-{
-    d_port = ui->le_port->text().toUShort();
-}
+//void DialogConnectionSettings::slot_setPort()
+//{
+//    d_port = ui->le_port->text().toUShort();
+//}
 
 void DialogConnectionSettings::setIp(QString ip)
 {
@@ -40,10 +41,16 @@ void DialogConnectionSettings::setIp(QString ip)
     ui->le_ip->setText(ip);
 }
 
-void DialogConnectionSettings::setPort(quint16 port)
+void DialogConnectionSettings::setPort_msg(quint16 port)
 {
     QString port_str;
-    ui->le_port->setText(port_str.setNum(port));
+    ui->le_port_msg->setText(port_str.setNum(port));
+}
+
+void DialogConnectionSettings::setPort_signal(quint16 port)
+{
+    QString port_str;
+    ui->le_port_sig->setText(port_str.setNum(port));
 }
 
 QString DialogConnectionSettings::serverIP()
@@ -52,8 +59,15 @@ QString DialogConnectionSettings::serverIP()
     return ui->le_ip->text().toLatin1().data();
 }
 
-quint16 DialogConnectionSettings::serverPort()
+quint16 DialogConnectionSettings::serverPort_msg()
 {
-    qDebug() << "port"<< ui->le_port->text().toUShort();
-    return ui->le_port->text().toUShort();
+    qDebug() << "port"<< ui->le_port_msg->text().toUShort();
+    return ui->le_port_msg->text().toUShort();
+}
+
+
+quint16 DialogConnectionSettings::serverPort_signal()
+{
+    qDebug() << "port"<< ui->le_port_sig->text().toUShort();
+    return ui->le_port_sig->text().toUShort();
 }

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>287</width>
-    <height>111</height>
+    <height>140</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>IP &amp;адрес:</string>
+        <string>IP:</string>
        </property>
        <property name="buddy">
         <cstring>le_ip</cstring>
@@ -30,17 +30,27 @@
       <widget class="QLineEdit" name="le_ip"/>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="lbl_port_msg">
        <property name="text">
-        <string>&amp;Порт:</string>
+        <string>Message port:</string>
        </property>
        <property name="buddy">
-        <cstring>le_port</cstring>
+        <cstring>le_port_msg</cstring>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="le_port"/>
+      <widget class="QLineEdit" name="le_port_msg"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="lbl_port_sig">
+       <property name="text">
+        <string>Signal port:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="le_port_sig"/>
      </item>
     </layout>
    </item>
@@ -75,7 +85,7 @@
  </widget>
  <tabstops>
   <tabstop>le_ip</tabstop>
-  <tabstop>le_port</tabstop>
+  <tabstop>le_port_msg</tabstop>
  </tabstops>
  <resources/>
  <connections>

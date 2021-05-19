@@ -2,7 +2,8 @@ QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
-CONFIG += c++11
+CONFIG += c++17
+
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -12,12 +13,18 @@ SOURCES += \
     dialogconnectionsettings.cpp \
     main.cpp \
     mainwindow.cpp \
-    qcustomplot.cpp
+    qcustomplot.cpp \
+    sarstructsettings/sarsessionitem.cpp \
+    sarstructsettings/sarstructsettingsModel.cpp \
+    sarstructsettings/sarstructsettingsdialog.cpp
 
 HEADERS += \
     dialogconnectionsettings.h \
     mainwindow.h \
-    qcustomplot.h
+    qcustomplot.h \
+    sarstructsettings/sarsessionitem.h \
+    sarstructsettings/sarstructsettingsModel.h \
+    sarstructsettings/sarstructsettingsdialog.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -26,3 +33,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 FORMS += \
     dialogconnectionsettings.ui
+
+INCLUDEPATH += ../
