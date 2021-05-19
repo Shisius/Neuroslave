@@ -32,7 +32,7 @@ public:
 
 	void push(T & sample) {
 		//while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
-    d_lock.store(true, std::memory_order_seq_cst);
+    	d_lock.store(true, std::memory_order_seq_cst);
 		push_pos.store(push_pos.load() + 1);
 		if (push_pos.load() == qsize) push_pos.store(0);
 		memcpy(storage + push_pos.load(), &sample, sizeof(T));
@@ -83,14 +83,14 @@ public:
 
 	void pop_wait(T * sample) {
 		while (true) {
-        //while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
-        d_lock.store(true, std::memory_order_seq_cst);
-		    if (push_pos.load(std::memory_order_relaxed) == ((pop_pos.load(std::memory_order_relaxed) + 1) & mask)) { 
-            break;
-		    }
-        Serial.println(push_pos.load(std::memory_order_relaxed));
-        d_lock.store(false, std::memory_order_seq_cst);
-        
+	        //while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
+	        d_lock.store(true, std::memory_order_seq_cst);
+			if (push_pos.load(std::memory_order_relaxed) == ((pop_pos.load(std::memory_order_relaxed) + 1) & mask)) { 
+	            break;
+			}
+	        Serial.println(push_pos.load(std::memory_order_relaxed));
+	        d_lock.store(false, std::memory_order_seq_cst);
+	        
 		}
 		pop(sample);	
 	}

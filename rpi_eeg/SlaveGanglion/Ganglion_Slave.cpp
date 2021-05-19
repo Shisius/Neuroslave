@@ -6,6 +6,7 @@ GanglionSlave::GanglionSlave() {
 
 void GanglionSlave::init()
 {
+	s_lock.store(false);
 	init_led();
 	led_off();
 	init_spi();
@@ -41,14 +42,17 @@ void GanglionSlave::spis_routine(int bytes_received, bool overflow)
 			case SPIS_ANSWER:
 				digitalWrite(SPIS_DATA_READY, 0);
 				return;
-			case SPIS_START:
-				mcp_sample_queue.pop_new((McpSample*)spis_tx);
-				break;
+			// case SPIS_START:
+			// 	mcp_sample_queue.pop_new((McpSample*)spis_tx);
+			// 	break;
 			case SPIS_MCP_SAMPLE:
-				mcp_sample_queue.pop_wait((McpSample*)spis_tx);
+				//mcp_sample_queue.pop_wait((McpSample*)spis_tx);
+				s_lock.store(true, std::memory_order_seq_cst);
+				memcpy(spis_tx, &sample_storage, sizeof(McpSample));
+				s_lock.store(false, std::memory_order_seq_cst);
 				break;
 		}
-		digitalWrite(SPIS_DATA_READY, 1);
+		//digitalWrite(SPIS_DATA_READY, 1);
 	}
 }
 
@@ -108,13 +112,18 @@ void GanglionSlave::mcp_process_data()
 	digitalWrite(MCP_SS, LOW);
 	mcp_send_cmd(CHAN_0, MCP_READ);
 	for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
-    new_sample.eeg_data[i] = conv24to32(mcp_read_register());
+    	new_sample.eeg_data[i] = conv24to32(mcp_read_register());
 	}
 	digitalWrite(MCP_SS, HIGH);
 	new_sample.sample_index = mcp_sample_counter;
 
 	// Store sample in buffer
-	mcp_sample_queue.push(new_sample);
+	s_lock.store(true, std::memory_order_seq_cst);
+	//mcp_sample_queue.push(new_sample);
+	sample_storage = new_sample;
+	s_lock.store(false, std::memory_order_seq_cst);
+	// Data ready
+	digitalWrite(SPIS_DATA_READY, 1);
 }
 
 void GanglionSlave::mcp_config(uint32_t gain, SAMPLE_RATE sample_rate)

@@ -6,10 +6,10 @@ GanglionSlave ganglion;
 volatile int spis_cnt = 0;
 
 void setup() {
-  Serial.begin(115200);
+    Serial.begin(115200);
 	ganglion.init();
 	attachInterrupt(MCP_DRDY, MCP_ISR, LOW);
-  Serial.println("Neuroslave 2.0");
+    Serial.println("Neuroslave 2.0");
 } 
 
 void loop() {
@@ -25,7 +25,7 @@ void SPIS_onReceive(int bytes_received, bool overflow)
 {
 	if (bytes_received <= 0)
 		return;
-  Serial.println("spis routine");
+    Serial.println("spis routine");
 	ganglion.spis_routine(bytes_received, overflow);
   
 }

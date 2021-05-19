@@ -6,7 +6,8 @@
 #include <SimbleeBLE.h>
 #include "Definitions_Ganglion.h"
 #include "Ganglion_Slave_Proto.h"
-#include "queue_mcu_rnr.h"
+#include <atomic>
+//#include "queue_mcu_rnr.h"
 
 #define SPIS_BUF_LEN sizeof(McpSample)
 #define SPIS_DATA_READY 2
@@ -23,7 +24,9 @@ private:
 	// SPIS
 	char spis_rx[SPIS_BUF_LEN];
 	char spis_tx[SPIS_BUF_LEN];
-	QueueRNR<McpSample, MCP_QUEUE_SIZE_BL> mcp_sample_queue;
+	//QueueRNR<McpSample, MCP_QUEUE_SIZE_BL> mcp_sample_queue;
+	McpSample sample_storage;
+	std::atomic_bool s_lock;
 
 public:
 
