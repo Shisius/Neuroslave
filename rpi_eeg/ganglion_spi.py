@@ -38,7 +38,8 @@ class GanglionSpiComm:
     def start(self):
         self.is_running = True
         gpio.add_event_detect(GANG_DRDY_PIN, gpio.RISING, callback = self.drdy_routine)
-        self.spi.xfer([GANG_CMD_START])
+        #self.spi.xfer([GANG_CMD_START])
+        print(self.get_sample())
 
     def stop(self):
         self.is_running = False
@@ -50,7 +51,8 @@ class GanglionSpiComm:
         return struct.unpack(GANG_SAMPLE_RULE, bytes(b_data))
 
     def drdy_routine(self, pin):
-        b_data = self.spi.xfer([0x00]*GANG_SAMPLE_SIZE)
+        #b_data = self.spi.xfer([0x00]*GANG_SAMPLE_SIZE)
+        b_data = self.get_sample()
         sample_list = struct.unpack(GANG_SAMPLE_RULE, bytes(b_data))
         # check
         if sample_list[0] != self.expected_index:
@@ -62,7 +64,7 @@ class GanglionSpiComm:
         if self.queue != None:
             self.queue.put(sample_list)
         # Ask for next
-        self.spi.xfer([GANG_CMD_SAMPLE])
+        #self.spi.xfer([GANG_CMD_SAMPLE])
 
     def print_thread(self):
         while self.is_running:
