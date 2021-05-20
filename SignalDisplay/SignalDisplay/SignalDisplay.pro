@@ -16,7 +16,8 @@ SOURCES += \
     qcustomplot.cpp \
     sarstructsettings/sarsessionitem.cpp \
     sarstructsettings/sarstructsettingsModel.cpp \
-    sarstructsettings/sarstructsettingsdialog.cpp
+    sarstructsettings/sarstructsettingsdialog.cpp \
+    stringlist_dialog.cpp
 
 HEADERS += \
     dialogconnectionsettings.h \
@@ -24,7 +25,8 @@ HEADERS += \
     qcustomplot.h \
     sarstructsettings/sarsessionitem.h \
     sarstructsettings/sarstructsettingsModel.h \
-    sarstructsettings/sarstructsettingsdialog.h
+    sarstructsettings/sarstructsettingsdialog.h \
+    stringlist_dialog.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

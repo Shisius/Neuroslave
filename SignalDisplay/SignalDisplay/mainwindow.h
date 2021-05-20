@@ -15,6 +15,7 @@ const char message_delimiter = ':';
 const QString textMessage_beginning = "Message";
 const QString textError_beginning = "Error";
 const QString textWarning_beginning = "Warning";
+const QString msgPlaylist_beginning = "Playlist";
 const uint16_t NeuroslaveLabel = 0xACDC;
 const uint signalSize = 1000;
 const uint DECIMATION_KOEFF = 100;
@@ -59,6 +60,7 @@ private slots:
     void slot_clearRadarMsgWindow();
     void slot_start();    
     void slot_set();
+    void slot_chooseMusic();
 
 private:
     QWidget *d_centralWidget;
