@@ -52,7 +52,7 @@ class GanglionSpiComm:
         #self.spi.xfer([GANG_CMD_START])
         self.sample_counter = 0
         self.sample_indices = np.array([-1]*10000)
-        print(self.get_sample())
+        print(self.get_sample(GANG_CMD_START))
         while self.sample_counter < 10000:
             #if self.data_ready:
             sample_list = self.get_sample()
@@ -65,8 +65,9 @@ class GanglionSpiComm:
                 #self.expected_index = sample_list[0] + 1
                 #if self.sample_counter % 1000 == 0:
                 #    print(sample_list)
-            self.sample_indices[self.sample_counter] = sample_list[0]
-            self.sample_counter += 1
+            if sample_list[-1] == 239:
+                self.sample_indices[self.sample_counter] = sample_list[0]
+                self.sample_counter += 1
                 #self.data_ready = False
         print(self.get_sample())
         print(self.sample_counter)
@@ -75,10 +76,9 @@ class GanglionSpiComm:
         self.is_running = False
         gpio.remove_event_detect(GANG_DRDY_PIN)    
 
-    def get_sample(self):
-        #self.spi.writebytes([GANG_CMD_SAMPLE])
-        self.spi.xfer([GANG_CMD_SAMPLE])
-        #b_data = self.spi.xfer([0x00]*GANG_SAMPLE_SIZE)
+    def get_sample(self, cmd = GANG_CMD_SAMPLE):
+        #self.spi.writebytes([cmd])
+        self.spi.xfer([cmd])
         b_data = self.spi.readbytes(GANG_SAMPLE_SIZE)
         return struct.unpack(GANG_SAMPLE_RULE, bytes(b_data))
 

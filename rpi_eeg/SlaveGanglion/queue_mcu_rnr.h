@@ -2,97 +2,64 @@
 #define _QUEUE_MCU_RNR_H_
 
 #include <atomic>
+#include "Ganglion_Slave_Proto.h"
+
+#define MCP_QUEUE_SIZE 256
 
 // size_bl - size bit length
-template<typename T, uint8_t size_bl>
-class QueueRNR
+class McpQueue
 {
 
 protected:
 
-	T storage[1 << size_bl];
+	McpSample storage[MCP_QUEUE_SIZE];
 
-	volatile std::atomic<uint32_t> pop_pos;
-	volatile std::atomic<uint32_t> push_pos;
+	volatile uint8_t pop_pos;
+	volatile uint8_t push_pos;
 	volatile std::atomic<bool> d_lock;
-	uint32_t mask = (1 << size_bl) - 1;
-	uint32_t qsize = 1 << size_bl;
+	uint32_t current_index;
 
 public:
 
-	QueueRNR() {
-		pop_pos.store(0);
-		push_pos.store(0);
+	McpQueue() {
+		pop_pos = 0;
+		push_pos = 0;
 		d_lock.store(false, std::memory_order_relaxed);
+		current_index = 0;
 	}
 
-	~QueueRNR() {
+	~McpQueue() {
 		delete [] storage;
 	}
 
-	void push(T & sample) {
-		//while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
+	void push(McpSample & sample) {
     	d_lock.store(true, std::memory_order_seq_cst);
-		push_pos.store(push_pos.load() + 1);
-		if (push_pos.load() == qsize) push_pos.store(0);
-		memcpy(storage + push_pos.load(), &sample, sizeof(T));
+		memcpy(storage + push_pos, &sample, sizeof(McpSample));
+		push_pos++;
 		d_lock.store(false, std::memory_order_seq_cst);	
 	}
 
-
-	// Block pop when nothing pushed?
-//	T pop() {
-//		T sample;
-//
-//		while (d_lock.load(std::memory_order_relaxed)) {}
-//		d_lock.store(true, std::memory_order_relaxed);
-//		pop_pos++;
-//		if (pop_pos == qsize) pop_pos = 0;
-//		sample = storage[pop_pos];
-//		d_lock.store(false, std::memory_order_relaxed);
-//		
-//		return sample;
-//	}
-
-//	void pop(T & sample) {
-//		while (d_lock.load(std::memory_order_relaxed)) {}
-//		d_lock.store(true, std::memory_order_relaxed);
-//		pop_pos++;
-//		if (pop_pos == qsize) pop_pos = 0;
-//		memcpy(&sample, storage + pop_pos, sizeof(T));
-//		d_lock.store(false, std::memory_order_relaxed);
-//	}
-
-	void pop(T * sample) {
-		//while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
+	void pop_first(McpSample * sample) {
 		d_lock.store(true, std::memory_order_seq_cst);
-		pop_pos.store(pop_pos.load() + 1);
-		if (pop_pos.load() == qsize) pop_pos.store(0);
-		memcpy(sample, storage + pop_pos.load(), sizeof(T));
+		storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::GOOD);
+		memcpy(sample, storage + pop_pos, sizeof(McpSample));
+		current_index = storage[pop_pos].sample_index;
+		pop_pos++;
 		d_lock.store(false, std::memory_order_seq_cst);
 	}
 
-	void pop_new(T * sample) {
-		while (!(d_lock.load(std::memory_order_relaxed))) {delay(1);} // Wait push
-		while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
-		d_lock.store(true, std::memory_order_relaxed);
-		pop_pos.store(push_pos.load());
-		memcpy(sample, storage + pop_pos.load(), sizeof(T));
-		d_lock.store(false, std::memory_order_relaxed);
-	}
-
-	void pop_wait(T * sample) {
-		while (true) {
-	        //while (d_lock.load(std::memory_order_relaxed)) {delay(1);}
-	        d_lock.store(true, std::memory_order_seq_cst);
-			if (push_pos.load(std::memory_order_relaxed) == ((pop_pos.load(std::memory_order_relaxed) + 1) & mask)) { 
-	            break;
-			}
-	        Serial.println(push_pos.load(std::memory_order_relaxed));
-	        d_lock.store(false, std::memory_order_seq_cst);
-	        
+	void pop(McpSample * sample) {
+		d_lock.store(true, std::memory_order_seq_cst);
+		if (storage[pop_pos].sample_index == current_index + 1) {
+			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::GOOD);
+			memcpy(sample, storage + pop_pos, sizeof(McpSample));
+			current_index++;
+			pop_pos++;
+		} else {
+			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::BAD);
+			memcpy(sample, storage + pop_pos, sizeof(McpSample));
 		}
-		pop(sample);	
+		d_lock.store(false, std::memory_order_seq_cst);
 	}
 
 };

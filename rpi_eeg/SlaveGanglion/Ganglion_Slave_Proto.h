@@ -14,6 +14,13 @@ enum class GanglionSlaveEvent : uint32_t
 	SPIS_OVERFLOW = 0x1
 };
 
+enum class McpSampleState : uint32_t
+{
+	GOOD = 239,
+	SAME = 555,
+	BAD = 30
+};
+
 enum GanglionSpisCommands
 {
 	SPIS_ANSWER = 0x0,

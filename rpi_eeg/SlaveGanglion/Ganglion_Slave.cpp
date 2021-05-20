@@ -6,7 +6,6 @@ GanglionSlave::GanglionSlave() {
 
 void GanglionSlave::init()
 {
-	s_lock.store(false);
 	init_led();
 	led_off();
 	init_spi();
@@ -40,16 +39,13 @@ void GanglionSlave::spis_routine(int bytes_received, bool overflow)
 	if (bytes_received > 0) {
 		switch (spis_rx[0]) {
 			case SPIS_ANSWER:
-				digitalWrite(SPIS_DATA_READY, 0);
+				//digitalWrite(SPIS_DATA_READY, 0);
 				return;
-			// case SPIS_START:
-			// 	mcp_sample_queue.pop_new((McpSample*)spis_tx);
-			// 	break;
+			case SPIS_START:
+				mcp_sample_queue.pop_first((McpSample*)spis_tx);
+				break;
 			case SPIS_MCP_SAMPLE:
-				//mcp_sample_queue.pop_wait((McpSample*)spis_tx);
-				s_lock.store(true, std::memory_order_seq_cst);
-				memcpy(spis_tx, &sample_storage, sizeof(McpSample));
-				s_lock.store(false, std::memory_order_seq_cst);
+				mcp_sample_queue.pop((McpSample*)spis_tx);
 				break;
 		}
 		//digitalWrite(SPIS_DATA_READY, 1);
@@ -118,12 +114,9 @@ void GanglionSlave::mcp_process_data()
 	new_sample.sample_index = mcp_sample_counter;
 
 	// Store sample in buffer
-	s_lock.store(true, std::memory_order_seq_cst);
-	//mcp_sample_queue.push(new_sample);
-	sample_storage = new_sample;
-	s_lock.store(false, std::memory_order_seq_cst);
+	mcp_sample_queue.push(new_sample);
 	// Data ready
-	digitalWrite(SPIS_DATA_READY, 1);
+	//digitalWrite(SPIS_DATA_READY, 1);
 }
 
 void GanglionSlave::mcp_config(uint32_t gain, SAMPLE_RATE sample_rate)
