@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>287</width>
-    <height>140</height>
+    <width>399</width>
+    <height>202</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,41 +16,64 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
+     <item row="2" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>IP:</string>
+        <string>&amp;IP:</string>
        </property>
        <property name="buddy">
         <cstring>le_ip</cstring>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="2" column="1">
       <widget class="QLineEdit" name="le_ip"/>
      </item>
-     <item row="1" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="lbl_port_msg">
        <property name="text">
-        <string>Message port:</string>
+        <string>&amp;Message port:</string>
        </property>
        <property name="buddy">
         <cstring>le_port_msg</cstring>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="3" column="1">
       <widget class="QLineEdit" name="le_port_msg"/>
      </item>
-     <item row="2" column="0">
+     <item row="4" column="0">
       <widget class="QLabel" name="lbl_port_sig">
        <property name="text">
-        <string>Signal port:</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Signal port:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="4" column="1">
       <widget class="QLineEdit" name="le_port_sig"/>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="lbl_username">
+       <property name="text">
+        <string>Username:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="le_username"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="lbl_password">
+       <property name="text">
+        <string>&amp;Password:</string>
+       </property>
+       <property name="buddy">
+        <cstring>le_password</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="le_password"/>
      </item>
     </layout>
    </item>
@@ -84,8 +107,11 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>le_username</tabstop>
+  <tabstop>le_password</tabstop>
   <tabstop>le_ip</tabstop>
   <tabstop>le_port_msg</tabstop>
+  <tabstop>le_port_sig</tabstop>
  </tabstops>
  <resources/>
  <connections>

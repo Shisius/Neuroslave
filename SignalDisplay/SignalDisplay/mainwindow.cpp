@@ -62,7 +62,7 @@ void MainWindow::createDocks()
     d_ptb_NeuroslaveMsg->addWidget(d_plbl_NeuroslaveMsg);
     d_ptb_NeuroslaveMsg->addSeparator();
     d_ptb_NeuroslaveMsg->addAction(clearRadarMsgWindow);
-    d_pdock_NeuroslaveMsg = new QDockWidget("Сообщения3", this);
+    d_pdock_NeuroslaveMsg = new QDockWidget(this);
     //d_pdock_NeuroslaveMsg->addAction(clearRadarMsgWindow);
     d_pdock_NeuroslaveMsg->setTitleBarWidget(d_ptb_NeuroslaveMsg);
     d_pte_NeuroslaveMsg = new QTextEdit(d_pdock_NeuroslaveMsg);
@@ -72,11 +72,17 @@ void MainWindow::createDocks()
 
 QToolBar* MainWindow::createToolBar()
 {
-    QToolBar* ptb = new QToolBar("Панель инструментов");
+    QToolBar* ptb = new QToolBar();
     QCommonStyle style;
-    act_start_stop = ptb->addAction(style.standardIcon(QStyle::SP_MediaPlay), "Start", this, SLOT(slot_start()));
-    ptb->addAction(style.standardIcon(QStyle::SP_DirIcon), "Playlist", this, SLOT(slot_chooseMusic()));
-    ptb->addAction(style.standardIcon(QStyle::SP_DialogSaveButton), "Set", this, SLOT(slot_set()));
+    act_start_stop = ptb->addAction(style.standardIcon(QStyle::SP_MediaPlay), d_cmdStrings_map.value(Start), this, SLOT(slot_start()));
+    act_playlist   = ptb->addAction(style.standardIcon(QStyle::SP_DirIcon), "Playlist", this, SLOT(slot_chooseMusic()));
+    act_set        = ptb->addAction(style.standardIcon(QStyle::SP_DialogSaveButton), d_cmdStrings_map.value(Set), this, SLOT(slot_set()));
+    act_record     = ptb->addAction(d_cmdStrings_map.value(Record), this, SLOT(slot_record()));
+
+    act_start_stop->setDisabled(true);
+    act_playlist  ->setDisabled(true);
+    act_set       ->setDisabled(true);
+    act_record    ->setDisabled(true);
     return ptb;
 }
 
@@ -99,7 +105,7 @@ void MainWindow::slot_start()
     if(d_sessionStarted){
         stop();
     } else {
-        sendCommand("Start"+message_ending);
+        sendCommand(d_cmdStrings_map.value(Start)+message_ending);
     }
 }
 
@@ -108,7 +114,7 @@ void MainWindow::start()
     d_sessionStarted = true;
     QCommonStyle style;
     act_start_stop->setIcon(style.standardIcon(QStyle::SP_MediaStop));
-    act_start_stop->setText("Stop");
+    act_start_stop->setText(d_cmdStrings_map.value(Stop));
 }
 
 void MainWindow::stop()
@@ -117,7 +123,7 @@ void MainWindow::stop()
     d_sessionStarted = false;
     QCommonStyle style;
     act_start_stop->setIcon(style.standardIcon(QStyle::SP_MediaPlay));
-    act_start_stop->setText("Start");
+    act_start_stop->setText(d_cmdStrings_map.value(Start));
 }
 
 void MainWindow::slot_set()
@@ -131,7 +137,7 @@ void MainWindow::slot_set()
         EegSession eegSession;
         if(radar::from_json(eegSession_str.toStdString(), eegSession))
         {
-            str_sendCmd = tr("%1%2%3%4").arg("Set").arg(message_delimiter).arg(eegSession_str).arg(message_ending);
+            str_sendCmd = tr("%1%2%3%4").arg(d_cmdStrings_map.value(Set)).arg(message_delimiter).arg(eegSession_str).arg(message_ending);
             //qDebug() << "str_sendCmd " << str_sendCmd;
             sendCommand(str_sendCmd);
         }
@@ -153,13 +159,11 @@ void MainWindow::slot_clearRadarMsgWindow()
 void MainWindow::slot_chooseMusic()
 {
     sendCommand("Choose"+message_ending);
-//    QStringList playlist = {"1","2"};
-//    StringList_Dialog playListDialog(playlist);
-//    if(playListDialog.exec())
-//    {
-//        qDebug() << "fileName" << playListDialog.fileName();
-//    }
-    //processMessage("Playlist:[\"Yesterday.wav\", \"Imagine.mp3\", \"Yellow submarine.ogg\"]\n\r");
+}
+
+void MainWindow::slot_record()
+{
+    sendCommand("Record"+message_ending);
 }
 
 void MainWindow::initConnection()
@@ -210,9 +214,20 @@ void MainWindow::slot_connection()
        dialog_connectionSettings->setIp(d_serverIP);
        dialog_connectionSettings->setPort_msg(d_port_msg);
        dialog_connectionSettings->setPort_signal(d_port_signal);
+       dialog_connectionSettings->setUsername(d_username);
+       dialog_connectionSettings->setPassword(d_password);
     }
     if(dialog_connectionSettings->exec())
     {
+        if(d_username != dialog_connectionSettings->username())
+        {
+            d_username = dialog_connectionSettings->username();
+        }
+        if(d_password != dialog_connectionSettings->password())
+        {
+            d_password = dialog_connectionSettings->password();
+        }
+
         if(progbar_connecting_msg == nullptr)
         {
             progbar_connecting_msg = new QProgressBar(d_centralWidget);
@@ -372,7 +387,6 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
             lbl_port_msg->setText(tr(((QString::number(d_port_msg) + connectedString).toStdString()).c_str()));
             lbl_port_msg->setStyleSheet("color: green");
             statusBar()->showMessage(tr(((QString::number(d_port_msg) + connectedString).toStdString()).c_str()), 2000);
-
         }
         else
         {
@@ -380,6 +394,10 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
         }
         lbl_port_msg->adjustSize();
         progbar_connecting_msg->hide();
+        act_start_stop->setEnabled(isConnected);
+        act_playlist  ->setEnabled(isConnected);
+        act_set       ->setEnabled(isConnected);
+        act_record    ->setEnabled(isConnected);
 
         if(d_tcpSocket_signal->state() == QAbstractSocket::ConnectingState){
             lbl_port_signal->setText(tr("Connection.."));
@@ -401,6 +419,7 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
         {
             lbl_port_signal->setStyleSheet("color: red");
         }
+
         lbl_port_signal->adjustSize();
         progbar_connecting_signal->hide();
         if(d_tcpSocket_msg->state() == QAbstractSocket::ConnectingState){
@@ -408,8 +427,11 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
             lbl_port_msg->adjustSize();
             lbl_port_msg->setStyleSheet("color: black");
             progbar_connecting_msg->show();
+            //act_start_stop->setEnabled(isConnected);
             return;
-        }
+        } /*else{
+            act_start_stop->setEnabled(false);
+        }*/
         break;
     default:
         break;
@@ -758,6 +780,8 @@ void MainWindow::writeSettings()
     qDebug() << "writeSettings()";
     QSettings settings("Neuroslave", "EEG_GUI");
     settings.beginGroup("serverAddress");
+    settings.setValue("Username", d_username);
+    settings.setValue("Password", d_password);
     settings.setValue("IP", d_serverIP);
     settings.setValue("port_msg", d_port_msg);
     settings.setValue("port_signal", d_port_signal);
@@ -773,6 +797,8 @@ void MainWindow::readSettings()
 {
     qDebug() << "readSettings";
     QSettings settings("Neuroslave", "EEG_GUI");
+    d_username = settings.value("serverAddress/Username","").toString();
+    d_password = settings.value("serverAddress/Password","").toString();
     d_serverIP = settings.value("serverAddress/IP","").toString();
     d_port_msg = static_cast<quint16>(settings.value("serverAddress/port_msg", 0).toUInt());
     d_port_signal = static_cast<quint16>(settings.value("serverAddress/port_signal", 0).toUInt());
