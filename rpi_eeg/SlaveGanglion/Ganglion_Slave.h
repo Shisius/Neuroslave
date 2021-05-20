@@ -23,7 +23,7 @@ private:
 	// SPIS
 	char spis_rx[SPIS_BUF_LEN];
 	char spis_tx[SPIS_BUF_LEN];
-	QueueRNR<McpSample, MCP_QUEUE_SIZE_BL> mcp_sample_queue;
+	McpQueue mcp_sample_queue;
 
 public:
 
