@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "stringlist_dialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -74,7 +75,7 @@ QToolBar* MainWindow::createToolBar()
     QToolBar* ptb = new QToolBar("Панель инструментов");
     QCommonStyle style;
     act_start_stop = ptb->addAction(style.standardIcon(QStyle::SP_MediaPlay), "Start", this, SLOT(slot_start()));
-    //ptb->addAction(style.standardIcon(QStyle::SP_MediaStop), "Stop", this, SLOT(slot_stop()));
+    ptb->addAction(style.standardIcon(QStyle::SP_DirIcon), "Playlist", this, SLOT(slot_chooseMusic()));
     ptb->addAction(style.standardIcon(QStyle::SP_DialogSaveButton), "Set", this, SLOT(slot_set()));
     return ptb;
 }
@@ -147,6 +148,18 @@ void MainWindow::slot_clearRadarMsgWindow()
 {
     qDebug() << "slot_clearRadarMsgWindow()";
     d_pte_NeuroslaveMsg->clear();
+}
+
+void MainWindow::slot_chooseMusic()
+{
+    sendCommand("Choose"+message_ending);
+//    QStringList playlist = {"1","2"};
+//    StringList_Dialog playListDialog(playlist);
+//    if(playListDialog.exec())
+//    {
+//        qDebug() << "fileName" << playListDialog.fileName();
+//    }
+    //processMessage("Playlist:[\"Yesterday.wav\", \"Imagine.mp3\", \"Yellow submarine.ogg\"]\n\r");
 }
 
 void MainWindow::initConnection()
@@ -434,6 +447,7 @@ void MainWindow::slot_readTCP_msg()
 void MainWindow::processMessage(const QString &msg)
 {
     qDebug()<<"processMessage";
+    qDebug()<<msg;
     QString addedText;
     //EegSession eegSession;
     //std::string eegSession_str = radar::get_type_name(eegSession);
@@ -446,12 +460,6 @@ void MainWindow::processMessage(const QString &msg)
         {
             displaySignalSettings();
             start();
-//            d_sessionStarted = true;
-//            QCommonStyle style;
-//            act_start_stop->setIcon(style.standardIcon(QStyle::SP_MediaStop));
-//            act_start_stop->setText("Stop");
-//            d_signal_data.clear();
-//            d_signal_data.resize(d_lastEegSession.n_channels);
         }
     }
     if(msg.startsWith(textMessage_beginning)){
@@ -462,6 +470,39 @@ void MainWindow::processMessage(const QString &msg)
     }
     if(msg.startsWith(textWarning_beginning)){
         addedText = QString("<span style=\" color:#ff8c00;\">%1</span>").arg(msg);
+    }
+    if(msg.startsWith(msgPlaylist_beginning)){
+        addedText = msg;
+        qDebug() << addedText;
+        //QString rem_str = msgPlaylist_beginning + QString(message_delimiter);
+        //int rem_str_count = rem_str.count();
+        QString jsonPlaylist_str = msg;
+        int ind_message_delimiter = msg.indexOf(message_delimiter);
+        jsonPlaylist_str.remove(0, ind_message_delimiter+1);
+        jsonPlaylist_str.remove(message_ending);
+        qDebug() << jsonPlaylist_str;
+        QJsonDocument jsonPlaylist = QJsonDocument::fromJson(jsonPlaylist_str.toUtf8());
+        if(jsonPlaylist.isNull())
+            return;
+        if(jsonPlaylist.isArray())
+        {
+            QJsonArray jsonArray = jsonPlaylist.array();
+            QVariantList playlist_qvariant = jsonArray.toVariantList();
+            QStringList playlist_stringList;
+            foreach(QVariant track, playlist_qvariant)
+            {
+                playlist_stringList << track.toString();
+            }
+            StringList_Dialog playListDialog(playlist_stringList);
+            if(playListDialog.exec())
+            {
+                QString fileName = playListDialog.fileName();
+                qDebug() << "fileName" << fileName;
+
+                sendCommand("Choose"+QString(message_delimiter)+fileName+message_ending);
+            }
+
+        }
     }
     d_pte_NeuroslaveMsg->append(addedText);
 }
