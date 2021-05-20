@@ -4,6 +4,7 @@ import json
 import random
 import time
 import math
+import os
 import multiprocessing as mp
 from nsv_def import *
 
@@ -14,6 +15,8 @@ MSG_DELIM = b':'
 MSG_END = b'\n\r'
 
 MP_CTX = mp.get_context('spawn')
+
+PLAYLIST_PATH = 'playlist'
 
 def data_process(flag):
     dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
@@ -36,7 +39,8 @@ class NeuroslaveTcpServer:
 
     COMMANDS = {b'Start': lambda s, msg: s.session_start(msg),
                 b'Stop': lambda s, msg: s.session_stop(msg),
-                b'Set': lambda s, msg: s.process_session(msg)}
+                b'Set': lambda s, msg: s.process_session(msg),
+                b'Choose': lambda s, msg: s.choose_music(msg)}
 
     def __init__(self):
         self.servSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
@@ -45,6 +49,7 @@ class NeuroslaveTcpServer:
         self.clientSock = None
         self.dataServer = None
         self.data_srv_running = MP_CTX.Value('i', 0)
+        self.choosen_music = ""
 
     def __del__(self):
         self.terminate()
@@ -68,12 +73,20 @@ class NeuroslaveTcpServer:
         self.clientSock.send(EEG_SESSION_STR + MSG_DELIM +
                              bytes(json.dumps(self.session), encoding = 'UTF-8') + MSG_END)
 
+    def send_playlist(self):
+        msg = b"Playlist" + MSG_DELIM + bytes(json.dumps(os.listdir(PLAYLIST_PATH)), encoding = 'UTF-8') + MSG_END
+        self.clientSock.send(msg)
+
     def process_cmd(self, msg):
         cmd = msg.split(MSG_DELIM)[0]
         if (cmd.find(MSG_END) > 0):
             cmd = cmd[:cmd.find(MSG_END)]
+        if (msg.find(MSG_DELIM) > 0):
+            payload = msg[msg.find(MSG_DELIM) + len(MSG_DELIM):]
+        else:
+            payload = msg[len(cmd):]
         if cmd in self.COMMANDS.keys():
-            if not self.COMMANDS[cmd](self, msg[msg.find(MSG_DELIM) + len(MSG_DELIM):]):
+            if not self.COMMANDS[cmd](self, payload):
                 self.send_msg('Command failed')
             else:
                 self.send_msg('Command accepted')
@@ -104,7 +117,18 @@ class NeuroslaveTcpServer:
         except Exception as e:
             print(e)
             return False
-            
+
+    def choose_music(self, msg):
+        file_name = msg[:msg.find(MSG_END)].decode('UTF-8')
+        if len(file_name) <= 0:
+            self.send_playlist()
+            return True
+        if file_name in os.listdir(PLAYLIST_PATH):
+            self.choosen_music = file_name
+            self.send_msg(file_name + " choosen")
+            return True
+        self.send_msg(file_name + " - Wrong file name")
+        return False
 
     def run(self):
         self.servSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
