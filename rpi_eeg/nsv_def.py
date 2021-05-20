@@ -8,7 +8,13 @@ EEG_SESSION = {'tag': 'hep',
 EEG_SESSION_STR = b'EegSession'
 EEG_SAMPLE_HEADER = 0xACDC
 
-EEG_CMD = (b'Start', b'Stop', b'Set')
+NSV_STATE_TERM = 0
+NSV_STATE_IDLE = 1
+NSV_STATE_SESSION = 2
+NSV_STATE_RECORD = 3
+
+MCP_SAMPLE_GOOD = 239
+MCP_SAMPLE_BAD = 30
 
 def EegSession():
     return copy.deepcopy(EEG_SESSION)

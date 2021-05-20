@@ -38,14 +38,17 @@ Command types:
 3. Stop. String "Stop". Parameters: None.
 	Example: "Stop\n\r"
 4. Choose. String "Choose". If no parameters given, Neuroslave returns Music playlist. If string parameter (file name) given, this file will be choosen. 
-	Example: "Choose:"Imagine.mp3"\n\r"
+	Example: "Choose:Imagine.mp3\n\r"
 5. Record. String "Record". Parameters: None.
 	Example: "Record\n\r"
 
 ## TCP Port for binary data
 This port is used for binary messages sending from Neuroslave to GUI
 Each message has the same structure:
-1. Header. Type: uint32_t. First 16 bit - Label = 0xACDC. Next 8 bit - payload_length in 32bits words, usually is equal to EegSession.n_channels. Next 8 bit - reserved.
+1. Header. Type: uint32_t. 
+	1.1. First 16 bit - Label = 0xACDC. 
+	1.2. Next 8 bit - payload_length in 32bits words, usually is equal to EegSession.n_channels. 
+	1.3. Next 8 bit - state.
 2. Payload. Type: int32_t[payload_length]. Array of signed integers. This is the useful data. Contains one point per all plotted curves.
 
 Example:
