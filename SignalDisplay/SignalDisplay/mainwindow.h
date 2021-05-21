@@ -16,6 +16,8 @@ const QString textMessage_beginning = "Message";
 const QString textError_beginning = "Error";
 const QString textWarning_beginning = "Warning";
 const QString msgPlaylist_beginning = "Playlist";
+const QString RECORD_FINISHED = "Finished";
+const QString ACCEPTED = "Accepted";
 const uint16_t NeuroslaveLabel = 0xACDC;
 const uint signalSize = 1000;
 const uint DECIMATION_KOEFF = 100;
@@ -32,10 +34,15 @@ class MainWindow : public QMainWindow
         XTOSTRUCT(O(tag, sample_rate, n_channels, gain, tcp_decimation))
     };
 
+    enum class NeuroslaveSampleState : uint8_t {
+        GOOD = 0,
+        INDEX_ERROR = 1
+    };
+
     struct Header{
         uint16_t Label;
         uint8_t payload_length;
-        uint8_t reserved;
+        NeuroslaveSampleState state;
     };
 
 
@@ -75,7 +82,7 @@ private:
     //QToolBar* ptb;
     QAction* act_connection;
     //Tool bar:
-    QAction* act_start_stop;
+    QAction* act_on_off;
     QAction* act_playlist;
     QAction* act_set;
     QAction* act_record;
@@ -116,16 +123,18 @@ private:
     QVector<QVector<double>> d_points;
 
     bool d_sessionStarted = false;
+    bool d_recordStarted = false;
 
     enum Cmd
     {
-        Start,
+        TurnOn,
         Set,
-        Stop,
+        TurnOff,
         Choose,
-        Record
+        Record,
+        Stop
     };
-    QMap<Cmd, QString> d_cmdStrings_map = {{Start, "Start"}, {Set, "Set"}, {Stop, "Stop"}, {Choose, "Choose"}, {Record, "Record"}};
+    QMap<Cmd, QString> d_cmdStrings_map = {{TurnOn, "TurnOn"}, {Set, "Set"}, {TurnOff, "TurnOff"}, {Choose, "Choose"}, {Record, "Record"}, {Stop, "Stop"}};
     void createActions();
     void createMenus();
     void createDocks();
