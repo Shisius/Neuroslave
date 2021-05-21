@@ -377,7 +377,8 @@ int SarStructSettingsModel::setupModelDataLevel(const QString &str, int pos, Sar
             parent->appendChild(item);
             qDebug() << "3 " << str.mid(paramBeginInd, paramEndInd-paramBeginInd) << str.mid(valBeginInd, valEndInd-valBeginInd);
             pos = valEndInd;
-            if(str.at(valEndInd) == "}"){
+            QChar ch = '}';
+            if(str.at(valEndInd) == ch){
                 qDebug() << "SUBSTRUCT_end";
                 break;
             }
