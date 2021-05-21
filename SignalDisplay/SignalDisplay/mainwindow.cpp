@@ -7,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
     resize(500,500);
     d_centralWidget = new QWidget;
     d_signalPlot = new QCustomPlot;
-    lbl_connection = new QLabel(tr("Нет соединения"));
+    lbl_connection = new QLabel(tr("No connection"));
     lbl_connection->adjustSize();
     lbl_connection->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
@@ -57,12 +57,13 @@ void MainWindow::createDocks()
     QAction *clearRadarMsgWindow = new QAction(style.standardIcon(QStyle::SP_LineEditClearButton), "Clear", this);
     connect(clearRadarMsgWindow, SIGNAL(triggered()), SLOT(slot_clearRadarMsgWindow()));
     //d_pdock_NeuroslaveMsg->addAction(clearRadarMsgWindow);
-    d_ptb_NeuroslaveMsg = new QToolBar("Сообщения1");
-    d_plbl_NeuroslaveMsg = new QLabel("Сообщения");
+    d_ptb_NeuroslaveMsg = new QToolBar("Messages");
+    d_plbl_NeuroslaveMsg = new QLabel("Messages");
     d_ptb_NeuroslaveMsg->addWidget(d_plbl_NeuroslaveMsg);
     d_ptb_NeuroslaveMsg->addSeparator();
     d_ptb_NeuroslaveMsg->addAction(clearRadarMsgWindow);
-    d_pdock_NeuroslaveMsg = new QDockWidget(this);
+    d_pdock_NeuroslaveMsg = new QDockWidget("Messages",this);
+    //d_pdock_NeuroslaveMsg->set
     //d_pdock_NeuroslaveMsg->addAction(clearRadarMsgWindow);
     d_pdock_NeuroslaveMsg->setTitleBarWidget(d_ptb_NeuroslaveMsg);
     d_pte_NeuroslaveMsg = new QTextEdit(d_pdock_NeuroslaveMsg);
@@ -74,12 +75,12 @@ QToolBar* MainWindow::createToolBar()
 {
     QToolBar* ptb = new QToolBar();
     QCommonStyle style;
-    act_start_stop = ptb->addAction(style.standardIcon(QStyle::SP_MediaPlay), d_cmdStrings_map.value(Start), this, SLOT(slot_start()));
+    act_on_off = ptb->addAction(style.standardIcon(QStyle::SP_DialogYesButton), d_cmdStrings_map.value(TurnOn), this, SLOT(slot_start()));
     act_playlist   = ptb->addAction(style.standardIcon(QStyle::SP_DirIcon), "Playlist", this, SLOT(slot_chooseMusic()));
     act_set        = ptb->addAction(style.standardIcon(QStyle::SP_DialogSaveButton), d_cmdStrings_map.value(Set), this, SLOT(slot_set()));
-    act_record     = ptb->addAction(d_cmdStrings_map.value(Record), this, SLOT(slot_record()));
+    act_record     = ptb->addAction(style.standardIcon(QStyle::SP_MediaPlay), d_cmdStrings_map.value(Record), this, SLOT(slot_record()));
 
-    act_start_stop->setDisabled(true);
+    act_on_off->setDisabled(true);
     act_playlist  ->setDisabled(true);
     act_set       ->setDisabled(true);
     act_record    ->setDisabled(true);
@@ -105,7 +106,7 @@ void MainWindow::slot_start()
     if(d_sessionStarted){
         stop();
     } else {
-        sendCommand(d_cmdStrings_map.value(Start)+message_ending);
+        sendCommand(d_cmdStrings_map.value(TurnOn)+message_ending);
     }
 }
 
@@ -113,17 +114,19 @@ void MainWindow::start()
 {
     d_sessionStarted = true;
     QCommonStyle style;
-    act_start_stop->setIcon(style.standardIcon(QStyle::SP_MediaStop));
-    act_start_stop->setText(d_cmdStrings_map.value(Stop));
+    act_on_off->setIcon(style.standardIcon(QStyle::SP_DialogNoButton));
+    act_on_off->setText(d_cmdStrings_map.value(TurnOff));
+    act_record->setEnabled(true);
 }
 
 void MainWindow::stop()
 {
-    sendCommand("Stop"+message_ending);
+    sendCommand(d_cmdStrings_map.value(TurnOff)+message_ending);
     d_sessionStarted = false;
     QCommonStyle style;
-    act_start_stop->setIcon(style.standardIcon(QStyle::SP_MediaPlay));
-    act_start_stop->setText(d_cmdStrings_map.value(Start));
+    act_on_off->setIcon(style.standardIcon(QStyle::SP_DialogYesButton));
+    act_on_off->setText(d_cmdStrings_map.value(TurnOn));
+    act_record->setEnabled(false);
 }
 
 void MainWindow::slot_set()
@@ -158,12 +161,22 @@ void MainWindow::slot_clearRadarMsgWindow()
 
 void MainWindow::slot_chooseMusic()
 {
-    sendCommand("Choose"+message_ending);
+    sendCommand(d_cmdStrings_map.value(Choose)+message_ending);
 }
 
 void MainWindow::slot_record()
 {
-    sendCommand("Record"+message_ending);
+    if(d_recordStarted)
+    {
+        //d_recordStarted = false;
+        sendCommand(d_cmdStrings_map.value(Stop)+message_ending);
+    } else {
+        sendCommand(d_cmdStrings_map.value(Record)+message_ending);
+//        QCommonStyle style;
+//        act_record->setIcon(style.standardIcon(QStyle::SP_MediaPlay));
+//        act_record->setText(d_cmdStrings_map.value(Record));
+        //d_recordStarted = true;
+    }
 }
 
 void MainWindow::initConnection()
@@ -391,13 +404,13 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
         else
         {
             lbl_port_msg->setStyleSheet("color: red");
+            act_record    ->setEnabled(false);
         }
         lbl_port_msg->adjustSize();
         progbar_connecting_msg->hide();
-        act_start_stop->setEnabled(isConnected);
+        act_on_off->setEnabled(isConnected);
         act_playlist  ->setEnabled(isConnected);
-        act_set       ->setEnabled(isConnected);
-        act_record    ->setEnabled(isConnected);
+        act_set       ->setEnabled(isConnected);        
 
         if(d_tcpSocket_signal->state() == QAbstractSocket::ConnectingState){
             lbl_port_signal->setText(tr("Connection.."));
@@ -418,6 +431,7 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
         else
         {
             lbl_port_signal->setStyleSheet("color: red");
+            act_record    ->setEnabled(false);
         }
 
         lbl_port_signal->adjustSize();
@@ -427,7 +441,7 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
             lbl_port_msg->adjustSize();
             lbl_port_msg->setStyleSheet("color: black");
             progbar_connecting_msg->show();
-            //act_start_stop->setEnabled(isConnected);
+
             return;
         } /*else{
             act_start_stop->setEnabled(false);
@@ -470,13 +484,13 @@ void MainWindow::processMessage(const QString &msg)
 {
     qDebug()<<"processMessage";
     qDebug()<<msg;
-    QString addedText;
+    QString addedText = msg;
     //EegSession eegSession;
     //std::string eegSession_str = radar::get_type_name(eegSession);
     QString eegSessionName_str = QString::fromStdString(radar::get_type_name(d_lastEegSession));
 
     if(msg.startsWith(eegSessionName_str)){
-        addedText = msg;
+        //addedText = msg;
         std::string msg_std_str = msg.toStdString();
         if(radar::from_json(msg_std_str, d_lastEegSession))
         {
@@ -484,17 +498,17 @@ void MainWindow::processMessage(const QString &msg)
             start();
         }
     }
-    if(msg.startsWith(textMessage_beginning)){
-        addedText = msg;
-    }
+//    if(msg.startsWith(textMessage_beginning)){
+//        addedText = msg;
+//    }
     if(msg.startsWith(textError_beginning)){
-        addedText = QString("<span style=\" color:#ff0000;\">%1</span>").arg(msg);
+        addedText = QString("<span style=\" color:#ff0000;\">%1</span>").arg(addedText);
     }
     if(msg.startsWith(textWarning_beginning)){
-        addedText = QString("<span style=\" color:#ff8c00;\">%1</span>").arg(msg);
+        addedText = QString("<span style=\" color:#ff8c00;\">%1</span>").arg(addedText);
     }
     if(msg.startsWith(msgPlaylist_beginning)){
-        addedText = msg;
+        //addedText = msg;
         qDebug() << addedText;
         //QString rem_str = msgPlaylist_beginning + QString(message_delimiter);
         //int rem_str_count = rem_str.count();
@@ -523,7 +537,23 @@ void MainWindow::processMessage(const QString &msg)
 
                 sendCommand("Choose"+QString(message_delimiter)+fileName+message_ending);
             }
-
+        }
+    }
+    if(msg.startsWith(d_cmdStrings_map.value(Record)))
+    {
+        if(msg.contains(RECORD_FINISHED))
+        {
+            QCommonStyle style;
+            act_record->setIcon(style.standardIcon(QStyle::SP_MediaPlay));
+            act_record->setText(d_cmdStrings_map.value(Record));
+            d_recordStarted = false;
+        }
+        if(msg.contains(ACCEPTED))
+        {
+            QCommonStyle style;
+            act_record->setIcon(style.standardIcon(QStyle::SP_MediaStop));
+            act_record->setText(d_cmdStrings_map.value(Stop));
+            d_recordStarted = true;
         }
     }
     d_pte_NeuroslaveMsg->append(addedText);
@@ -554,9 +584,18 @@ void MainWindow::slot_readTCP_signal()
         bytesAvailable -= sizeof(header.payload_length);
         if(header.payload_length != d_lastEegSession.n_channels)
             return;
-        in >> header.reserved;
-        qDebug() << "header.reserved"<< header.reserved;
-        bytesAvailable -= sizeof(header.reserved);
+        in >> header.state;
+        switch (header.state) {
+        case NeuroslaveSampleState::GOOD:
+            //FILL ME
+            break;
+        case NeuroslaveSampleState::INDEX_ERROR:
+            d_pte_NeuroslaveMsg->append(QString("<span style=\" color:#ff0000;\">%1</span>").arg("NeuroslaveSampleState = INDEX_ERROR"));
+            break;
+        default:
+            break;
+        }
+        bytesAvailable -= sizeof(header.state);
         if(bytesAvailable < header.payload_length)
             return;
         //QVector<int32_t> points(header.payload_length);
@@ -583,83 +622,7 @@ void MainWindow::slot_readTCP_signal()
             }
             iXSignal++;
         }
-//        if(!d_isSarSessionRecieved){ // if sarSession struct hasn't received yet
-//            readBytes = 0;
-//            char ch[1]; //for received char
-//            do
-//            {
-//                in.readRawData(ch,1); //receive 1 char
-//                //qDebug()<<"ch" << ch;
-//                d_sarSessionStructJson += ch[0]; //add received char to string
-//                d_tcpOutStream_signal.writeRawData(ch,1); //write received char to signal binary log
-//                readBytes++; // increase read bytes
-//            }while(ch[0] != radar::message_ending && d_tcpSocket_frame->bytesAvailable()>0); //until radar::message_ending
-
-//            qDebug()<<"sarSessionStructJson.size()" << d_sarSessionStructJson.size();
-//            qDebug()<<"readBytes (for sarSessionStructJson): "<< readBytes;
-//            writeTcpLog_msg("[Radar signal] " + QString::fromStdString(d_sarSessionStructJson)); //write received string with sarSession struct json string to TCP log
-
-//            size_t ind = d_sarSessionStructJson.find(radar::message_delimiter);
-//            if(ind == std::string::npos)
-//                return;
-//            d_sarSessionStructJson.erase(0, ind+1); // remove chars before sarSession struct json string
-
-//            qDebug()<<"sarSessionStructJson" << QString::fromStdString(d_sarSessionStructJson);
-//            radar::from_json(d_sarSessionStructJson, d_sarSessionForSignal); // get sarSession struct
-
-//            d_isSarSessionRecieved = true; //we recieved sarSession struct
-//            d_sarSessionStructJson.clear(); //clear string for the next sarSession
-
-//            if (!d_signalBuffer.isOpen())
-//                d_signalBuffer.open(QBuffer::WriteOnly); //open buffer for signal data
-
-//            displaySignalSettings();
-
-//            if(restBlockSize == readBytes){ //if we recieved only sarSession struct then leave
-//                break;
-//                //return;
-//            }
-//            restBlockSize -= readBytes; //otherwise calc how many bytes still available
-//        }
-
-//        qDebug()<<"sarSession.adc_sample_buf_len: "<<d_sarSessionForSignal.adc_sample_buf_len;
-
-//        if(restBlockSize > static_cast<int>(d_sarSessionForSignal.adc_sample_buf_len) - d_receivedSignalBlockSize){ //if we received more than the residue of the signal
-//            restBlockSize = d_sarSessionForSignal.adc_sample_buf_len - d_receivedSignalBlockSize; //we will read only the residue of the signal
-//        }
-//        qDebug() << "d_tcpSocket_signal->bytesAvailable()" << d_tcpSocket_signal->bytesAvailable();
-//        qDebug() << "restBlockSize after received sarSessionStructJson" << restBlockSize;
-//        const int signalSize = restBlockSize;
-//        char signal[signalSize];
-//        readBytes = in.readRawData(signal, signalSize); //read part of the signal
-//        qDebug() << "readBytes (for signal part)" << readBytes;
-//        d_signalBuffer.write(signal,readBytes); //write part of the signal to the signal buffer
-//        d_tcpOutStream_signal.writeRawData(signal,readBytes);  //write received part of the signal to signal binary log
-//        qDebug() << "d_signalBuffer.size()" << d_signalBuffer.size();
-//        d_receivedSignalBlockSize += readBytes; //add received signal part bytes to the previous received signal block
-
-//        if(d_receivedSignalBlockSize == static_cast<int>(d_sarSessionForSignal.adc_sample_buf_len)){ //if we received the whole signal
-//            std::vector<sar::adc_sample_t> signal_vector;
-//            sar::parse_adc_pack(d_signalBuffer.buffer().constData(), d_sarSessionForSignal.adc_sample_buf_len, d_sarSessionForSignal.cpu_pp_parameters.ADC_N_recv, d_lastSarInitial.fpga_config.adc_header_length, signal_vector); //parse signal data to signal_vector
-//            addSignalToPlot(signal_vector);
-//            d_receivedSignalBlockSize = 0;
-//            d_signalBuffer.seek(d_receivedSignalBlockSize);
-//            d_signalBuffer.close();
-//            if(!d_isSarSessionRecieved) //last signal part is received before in_process become false. So this code part doesn't work
-//            {
-//                //d_signal.clear();
-//                d_tcpFile_signal.close();
-//                d_tcpOutStream_signal.resetStatus();
-//                qDebug() << "d_tcpFile_signal.close()";
-//                d_isSarSessionRecieved = false; //will be waiting for a new sarSession struct
-//            }
-//            qDebug() << "d_tcpSocket_signal->bytesAvailable() after received signal" << d_tcpSocket_signal->bytesAvailable();
-//            d_signalBuffer.open(QBuffer::WriteOnly); //open buffer for signal data
-//        }
-//        if (d_signalBuffer.isOpen())
-//            d_signalBuffer.seek(d_receivedSignalBlockSize);
     }
-
 }
 
 void MainWindow::closeConnections()
