@@ -10,6 +10,7 @@ JSON message usually starts with structure name followed by delimiter = ':'.
 JSON message structure: "StructName:{json here}\n\r"
 Text message starts with "Message:" or "Error:" for errors or "Warning:" for warnings
 Text message example: "Message:Have a nice day, User!\n\r"
+Command answer example: "Record:Finished\n\r"
 
 ### JSON messages types
 1. EegSession
@@ -31,16 +32,28 @@ Neuroslave can receive text and json messages as commands.
 Message should have syntax like "Command:Parameter:Value\n\r".
 Value can be JSON string.
 Command types:
-1. Start. String "Start". Parameters: None.
-	Example: "Start\n\r"
+1. TurnOn. String "TurnOn". Parameters: None.
+	Example: "TurnOn\n\r"
+	Answer: "EegSession:{current session parameters here}\n\r"
 2. Set. String "Set". Parameter: "EegSession". Value: JSON EegSession struct representation.
 	Example: "Set:EegSession:{"tag":"hep","sample_rate":1000,"n_channels":4,"gain":1,"tcp_decimation":10}\n\r"
-3. Stop. String "Stop". Parameters: None.
-	Example: "Stop\n\r"
-4. Choose. String "Choose". If no parameters given, Neuroslave returns Music playlist. If string parameter (file name) given, this file will be choosen. 
+	Answer: "Set:Accepted\n\r"
+3. TurnOff. String "TurnOff". Parameters: None.
+	Example: "TurnOff\n\r"
+	Answer: "TurnOff:Accepted\n\r"
+4. Choose. String "Choose". If no parameters given, Neuroslave returns Music playlist.
+	Example: "Choose\n\r"
+	Answer: "Playlist:["Yesterday.wav", "Imagine.mp3", "Yellow submarine.ogg"]\n\r"
+5. Choose. String "Choose:File name.ext\n\r". If string parameter (file name) given, this file will be choosen. 
 	Example: "Choose:Imagine.mp3\n\r"
-5. Record. String "Record". Parameters: None.
+	Answer: "Choose:Accepted\n\r"
+6. Record. String "Record". Parameters: None.
 	Example: "Record\n\r"
+	Answer1: "Record:Accepted\n\r". Immediately.
+	Answer2: "Record:Finished\n\r". Neuroslave will send it when record is finished.
+7. Stop. String "Stop". Parameter:None.
+	Example: "Stop\n\r"
+	Answer: "Stop:Accepted\n\r"
 
 ## TCP Port for binary data
 This port is used for binary messages sending from Neuroslave to GUI
@@ -49,11 +62,17 @@ Each message has the same structure:
 	1.1. First 16 bit - Label = 0xACDC. 
 	1.2. Next 8 bit - payload_length in 32bits words, usually is equal to EegSession.n_channels. 
 	1.3. Next 8 bit - state.
+	```
+	enum class NeuroslaveSampleState : uint8_t {
+		GOOD = 0,
+		INDEX_ERROR = 1
+	};
+	```
 2. Payload. Type: int32_t[payload_length]. Array of signed integers. This is the useful data. Contains one point per all plotted curves.
 
 Example:
 ```
-0xACDC0400 - Label:0xACDC, Payload length (number of channels): 0x04, Reserved: 0x00
+0xACDC0400 - Label:0xACDC, Payload length (number of channels): 0x04, State: 0x00 - NeuroslaveSampleState::GOOD
 0x00000001 - Value in channel_1 = 1
 0xFFFFFFFF - Value in channel_2 = -1
 0x007FFFFF - Value in channel_3 = 2^23 - 1 (Maximum value)
