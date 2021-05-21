@@ -25,9 +25,11 @@ class MainWindow : public QMainWindow
     Q_OBJECT
     struct EegSession {
         std::string tag; // Session name
-        float sample_rate; // Sample rate in Hz
+        unsigned int sample_rate; // Sample rate in Hz
         unsigned int n_channels; // Number of data channels. This value should be equal to number of plotted curves.
-        XTOSTRUCT(O(tag, sample_rate, n_channels))
+        unsigned int gain; // Gain value for amplifier
+        unsigned int tcp_decimation; // Data decimation for tcp binary port
+        XTOSTRUCT(O(tag, sample_rate, n_channels, gain, tcp_decimation))
     };
 
     struct Header{
@@ -61,6 +63,7 @@ private slots:
     void slot_start();    
     void slot_set();
     void slot_chooseMusic();
+    void slot_record();
 
 private:
     QWidget *d_centralWidget;
@@ -69,9 +72,13 @@ private:
     QCustomPlot *d_signalPlot;
     QList<QCPAxis*> d_allAxes;
     QMenu* menu_settings;
+    //QToolBar* ptb;
     QAction* act_connection;
-
+    //Tool bar:
     QAction* act_start_stop;
+    QAction* act_playlist;
+    QAction* act_set;
+    QAction* act_record;
 
     //Bottom dock:
     QToolBar* d_ptb_NeuroslaveMsg;
@@ -83,6 +90,8 @@ private:
     QString d_serverIP;
     quint16 d_port_msg;
     quint16 d_port_signal;
+    QString d_username;
+    QString d_password;
     QTcpSocket *d_tcpSocket_msg = nullptr;
     QTcpSocket *d_tcpSocket_signal = nullptr;
     QProgressBar *progbar_connecting_msg = nullptr;
@@ -108,6 +117,15 @@ private:
 
     bool d_sessionStarted = false;
 
+    enum Cmd
+    {
+        Start,
+        Set,
+        Stop,
+        Choose,
+        Record
+    };
+    QMap<Cmd, QString> d_cmdStrings_map = {{Start, "Start"}, {Set, "Set"}, {Stop, "Stop"}, {Choose, "Choose"}, {Record, "Record"}};
     void createActions();
     void createMenus();
     void createDocks();

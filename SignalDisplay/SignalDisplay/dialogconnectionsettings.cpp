@@ -14,6 +14,7 @@ DialogConnectionSettings::DialogConnectionSettings(QWidget *parent) :
     ui->le_port_msg->setValidator(new QRegExpValidator(re_port, this));
     ui->le_port_sig->setValidator(new QRegExpValidator(re_port, this));
     //connect(ui->le_port, SIGNAL(textChanged(QString)), SLOT(slot_setPort_msg()));
+    //ui->le_username->setS
 }
 
 DialogConnectionSettings::~DialogConnectionSettings()
@@ -34,7 +35,7 @@ DialogConnectionSettings::~DialogConnectionSettings()
 //    d_port = ui->le_port->text().toUShort();
 //}
 
-void DialogConnectionSettings::setIp(QString ip)
+void DialogConnectionSettings::setIp(const QString &ip)
 {
     //QString ip_str = QString(ip);
     //qDebug() << 2<< ip_str;
@@ -51,6 +52,16 @@ void DialogConnectionSettings::setPort_signal(quint16 port)
 {
     QString port_str;
     ui->le_port_sig->setText(port_str.setNum(port));
+}
+
+void DialogConnectionSettings::setUsername(const QString &username)
+{
+    ui->le_username->setText(username);
+}
+
+void DialogConnectionSettings::setPassword(const QString &password)
+{
+    ui->le_password->setText(password);
 }
 
 QString DialogConnectionSettings::serverIP()
@@ -70,4 +81,16 @@ quint16 DialogConnectionSettings::serverPort_signal()
 {
     qDebug() << "port"<< ui->le_port_sig->text().toUShort();
     return ui->le_port_sig->text().toUShort();
+}
+
+QString DialogConnectionSettings::username()
+{
+    qDebug() << "username"<< ui->le_username->text().toLatin1().data();
+    return ui->le_username->text().toLatin1().data();
+}
+
+QString DialogConnectionSettings::password()
+{
+    qDebug() << "password"<< ui->le_password->text().toLatin1().data();
+    return ui->le_password->text().toLatin1().data();
 }
