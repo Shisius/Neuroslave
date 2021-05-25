@@ -1,5 +1,5 @@
 import simpleaudio as sa
-import easygui as egui
+#import easygui as egui
 import os
 import time
 import struct
@@ -49,9 +49,14 @@ class WavPlayer:
         self.current_sample = round((self.current_time - self.start_time) * self.wave_obj.sample_rate)
         #self.track_buffer = struct.unpack(str(self.track_buffer_length))
 
-    def choose_wav(self):
-        self.wav_file = egui.fileopenbox()
-        self.wav_file_dir = os.path.dirname(self.wav_file)
+    def choose_wav(self, file_path = ''):
+        if file_path == '':
+            #self.wav_file = egui.fileopenbox()
+            #self.wav_file_dir = os.path.dirname(self.wav_file)
+            return
+        else:
+            self.wav_file = file_path
+            self.wav_file_dir = file_path
         self.wave_obj = sa.WaveObject.from_wave_file(self.wav_file)
         self.session_name = self.wav_file[len(self.wav_file_dir)+1:self.wav_file.rfind(WAV_EXT)]
         self.track_buffer = [0] * self.track_buffer_length
@@ -63,7 +68,7 @@ class WavPlayer:
 
 if __name__ == "__main__":
     w = WavPlayer()
-    w.choose_wav()
+    w.choose_wav('wav.wav')
     w.play()
     #w.play_obj.wait_done()
     while w.get_is_playing():

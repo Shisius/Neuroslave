@@ -5,7 +5,6 @@
 #include "Ganglion_Slave_Proto.h"
 
 #define MCP_QUEUE_SIZE 256
-
 // size_bl - size bit length
 class McpQueue
 {
@@ -55,9 +54,14 @@ public:
 			memcpy(sample, storage + pop_pos, sizeof(McpSample));
 			current_index++;
 			pop_pos++;
-		} else {
-			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::BAD);
+		} else if (storage[pop_pos].sample_index < current_index + 1) {
+			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::OLD);
 			memcpy(sample, storage + pop_pos, sizeof(McpSample));
+		} else {
+			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::SKIPPED);
+			memcpy(sample, storage + pop_pos, sizeof(McpSample));
+			current_index = storage[pop_pos].sample_index;
+			pop_pos++;
 		}
 		d_lock.store(false, std::memory_order_seq_cst);
 	}

@@ -19,6 +19,7 @@ class NeuroslaveEegDataHandler:
         self.dataSock.bind(('', SRV_DATA_PORT))
         self.servSock.listen(1)
         while self.state != NSV_STATE_TERM:
-            pass #try:
+            try:
+                self.clientSock, clientAddr = self.dataSock.accept()
                 
     

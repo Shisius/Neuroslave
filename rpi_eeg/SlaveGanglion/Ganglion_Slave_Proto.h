@@ -17,8 +17,8 @@ enum class GanglionSlaveEvent : uint32_t
 enum class McpSampleState : uint32_t
 {
 	GOOD = 239,
-	SAME = 555,
-	BAD = 30
+	OLD = 555,
+	SKIPPED = 30
 };
 
 enum GanglionSpisCommands
