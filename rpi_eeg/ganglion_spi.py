@@ -55,9 +55,7 @@ class GanglionSpiComm:
         while self.state.value >= NSV_STATE_SESSION:
             sample_list = self.get_sample()            
             # check
-            if sample_list[-1] == MCP_SAMPLE_GOOD:
-                if not self.check(sample_list[0]):
-                    sample_list[-1] == MCP_SAMPLE_BAD
+            if sample_list[-1] != MCP_SAMPLE_OLD:
                 # send
                 self.pipe.send(sample_list)
                 self.sample_counter += 1

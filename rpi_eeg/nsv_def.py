@@ -1,5 +1,6 @@
 import copy
 import struct
+import multiprocessing as mp
 
 EEG_SESSION = {'tag': 'hep',
                'sample_rate': 1000,
@@ -14,7 +15,18 @@ NSV_STATE_SESSION = 2
 NSV_STATE_RECORD = 3
 
 MCP_SAMPLE_GOOD = 239
-MCP_SAMPLE_BAD = 30
+MCP_SAMPLE_OLD = 555
+MCP_SAMPLE_SKIPPED = 30
+
+PLAYLIST_PATH = 'playlist'
+
+SRV_TIMEOUT = 5
+SRV_MSG_PORT = 7239
+SRV_DATA_PORT = 8239
+MSG_DELIM = b':'
+MSG_END = b'\n\r'
+
+
 
 def EegSession():
     return copy.deepcopy(EEG_SESSION)
