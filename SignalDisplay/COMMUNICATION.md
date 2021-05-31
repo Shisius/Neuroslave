@@ -5,7 +5,7 @@ Servers on Neuroslave - clients on GUI.
 
 ## TCP Port for Messages
 This port is used for sending and receiving text and JSON messages.
-Each message end with message ending = "\n\r"
+Each message ends with message ending = "\n\r"
 JSON message usually starts with structure name followed by delimiter = ':'.
 JSON message structure: "StructName:{json here}\n\r"
 Text message starts with "Message:" or "Error:" for errors or "Warning:" for warnings
@@ -23,9 +23,23 @@ Command answer example: "Record:Finished\n\r"
 		unsigned int gain; // Gain value for amplifier
 		unsigned int tcp_decimation; // Data decimation for tcp binary port
 	};
-	```
 	Example: "EegSession:{"tag":"hep","sample_rate":1000,"n_channels":4,"gain":1,"tcp_decimation":10}\n\r"
-2. Music playlist: list of strings. Example: "Playlist:["Yesterday.wav", "Imagine.mp3", "Yellow submarine.ogg"]\n\r"
+	```
+2. Music playlist: list of strings. 
+	```
+	Example: "Playlist:["Yesterday.wav", "Imagine.mp3", "Yellow submarine.ogg"]\n\r"
+	```
+3. Game settings:
+	C++ Structure:
+	```
+	struct GameSettings {
+		std::string subfolder; // Subfolder in playlist folder
+		float duration; // in seconds
+		float volume; // from 0 to 100%
+		uint8_t complexity; // from 2 to 6. Number of music files for choose
+	};
+	Example: "GameSettings:{"subfolder":"Beatles","duration":10.0,"volume":100,"complexity":4}\n\r"
+	```
 
 ### GUI to Neuroslave communication
 Neuroslave can receive text and json messages as commands.
@@ -89,7 +103,11 @@ Command types:
 	Example: "Game:Imagine.mp3\n\r"
 	Answer: "Game:Yesterday.wav\n\r". User loses.
 	```
-
+12. Set. String "Set". Parameter: "GameSettings". Value: JSON GameSettings struct representation.
+	```
+	Example: "Set:GameSettings:{"subfolder":"Beatles","duration":10.0,"volume":100,"complexity":4}\n\r"
+	Answer: "Set:Accepted\n\r"
+	```
 
 ## TCP Port for binary data
 This port is used for binary messages sending from Neuroslave to GUI
