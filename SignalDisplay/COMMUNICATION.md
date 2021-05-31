@@ -82,12 +82,12 @@ Command types:
 	```
 	Example: "Game\n\r"
 	Answer1: "Game:Accepted\n\r". Immediately.
-	Answer2: "Game:["Yesterday.wav", "Imagine.mp3", "Yellow submarine.ogg"]". User must choose one. Then Command 11 will be sent.
+	Answer2: "Game:["Yesterday.wav", "Imagine.mp3", "Yellow submarine.ogg"]\n\r". User must choose one. Then Command 11 will be sent.
 	```
-11. Game. String "Game:File_name.ext\n\r". This is the answer on Answer2 of Command 10. Neuroslave return music file that was played. If command and answer are the same, user wins - otherwise - lose.
+11. Game. String "Game:File_name.ext\n\r". This is the answer on Answer2 of Command 10. Neuroslave returns music file that was played. If command and answer are the same, user wins - otherwise - loses.
 	```
 	Example: "Game:Imagine.mp3\n\r"
-	Answer: "Game:Yesterday.wav". 
+	Answer: "Game:Yesterday.wav\n\r". User loses.
 	```
 
 
