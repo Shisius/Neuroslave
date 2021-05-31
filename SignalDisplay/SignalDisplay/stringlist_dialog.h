@@ -16,7 +16,7 @@ private:
 
 public:
     StringList_Dialog(const QStringList &, QWidget *parent = 0);
-    QString fileName();
+    QString chosenLine();
 };
 
 #endif // STRINGLIST_DIALOG_H

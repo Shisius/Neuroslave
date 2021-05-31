@@ -26,7 +26,7 @@ StringList_Dialog::StringList_Dialog(const QStringList & strList, QWidget *paren
 
 }
 
-QString StringList_Dialog::fileName()
+QString StringList_Dialog::chosenLine()
 {
     return qvariant_cast<QString>(d_pListView->currentIndex().data());
 }

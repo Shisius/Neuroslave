@@ -132,6 +132,7 @@ void MainWindow::stop()
 void MainWindow::slot_set()
 {
     QString str_sendCmd;
+
     QString str_sarStruct = QString::fromStdString(radar::to_json(d_lastEegSession));
     sarStructSettingsDialog dialog_sarStructSettings(str_sarStruct, this);
     if(dialog_sarStructSettings.exec())
@@ -326,29 +327,20 @@ void MainWindow::slot_catchErrorTCP_signal(QAbstractSocket::SocketError /*socket
     QMessageBox::information(this, tr(msgBoxName.toStdString().c_str()), tr(error.toStdString().c_str()));
     statusBar()->showMessage(tr(((msgBoxName + ". Connection error.").toStdString()).c_str()), 2000);
     lbl_port_signal->setText(tr(((msgBoxName + ": Connection error.").toStdString()).c_str()));
-    tcpConnectedDisplay(tcpPort::SIGNAL, false);
+    tcpConnectedDisplay(tcpPort::SIG, false);
 }
 
-//void MainWindow::slot_tcpConnected()
-//{
-//    qDebug() << "slot_tcpConnected";
-//    QString msgBoxName = d_serverIP + ": " + QString::number(d_port);
-//    statusBar()->showMessage(tr(((msgBoxName + ". Connection established.").toStdString()).c_str()), 2000);
-//    lbl_connection->setText(tr("Connection established."));
-//    lbl_connection->setStyleSheet("color: green");
-//    lbl_connection->adjustSize();
-//    progbar_connecting->hide();
-//}
 void MainWindow::slot_tcpConnected_msg()
 {
     qDebug() << "slot_tcpConnected_msg";
     tcpConnectedDisplay(tcpPort::MSG, true);
+    sendCommand("User\n\r");
 }
 
 void MainWindow::slot_tcpConnected_signal()
 {
     qDebug() << "slot_tcpConnected_signal";
-    tcpConnectedDisplay(tcpPort::SIGNAL, true);
+    tcpConnectedDisplay(tcpPort::SIG, true);
 }
 
 void MainWindow::slot_tcpDisconnected_msg()
@@ -364,22 +356,8 @@ void MainWindow::slot_tcpDisconnected_signal()
     qDebug()<<"slot_tcpDisconnected_signal()";
     lbl_port_signal->setText(tr(((QString::number(d_port_signal) + " port: connection was lost.").toStdString()).c_str()));
     statusBar()->showMessage(tr(((QString::number(d_port_signal) + " port: connection was lost.").toStdString()).c_str()), 2000);
-    tcpConnectedDisplay(tcpPort::SIGNAL, false);
+    tcpConnectedDisplay(tcpPort::SIG, false);
 }
-
-//void MainWindow::slot_tcpDisconnected()
-//{
-//    qDebug()<<"slot_tcpDisconnected_msg()";
-//    QString error = d_tcpSocket->errorString();
-//    QString msgBoxName = d_serverIP + ": " + QString::number(d_port);
-//    QMessageBox::information(this, tr(msgBoxName.toStdString().c_str()), tr(error.toStdString().c_str()));
-
-//    statusBar()->showMessage(tr(((msgBoxName + ". Connection error.").toStdString()).c_str()), 2000);
-//    lbl_connection->setText(tr("Connection error."));
-//    lbl_connection->setStyleSheet("color: red");
-//    lbl_connection->adjustSize();
-//    progbar_connecting->hide();
-//}
 
 void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
 {
@@ -390,7 +368,6 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
     lbl_port_signal->show();
     lbl_port_signal->raise();
 
-    //QString connectedStringRus =  " порт: соединение yстановлено.";
     QString connectedString =  " port: connection was established.";
 
     switch (port) {
@@ -421,7 +398,7 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
         }
         break;
 
-    case tcpPort::SIGNAL:
+    case tcpPort::SIG:
         if(isConnected)
         {
             lbl_port_signal->setText(tr(((QString::number(d_port_signal) + connectedString).toStdString()).c_str()));
@@ -508,10 +485,7 @@ void MainWindow::processMessage(const QString &msg)
         addedText = QString("<span style=\" color:#ff8c00;\">%1</span>").arg(addedText);
     }
     if(msg.startsWith(msgPlaylist_beginning)){
-        //addedText = msg;
         qDebug() << addedText;
-        //QString rem_str = msgPlaylist_beginning + QString(message_delimiter);
-        //int rem_str_count = rem_str.count();
         QString jsonPlaylist_str = msg;
         int ind_message_delimiter = msg.indexOf(message_delimiter);
         jsonPlaylist_str.remove(0, ind_message_delimiter+1);
@@ -532,10 +506,10 @@ void MainWindow::processMessage(const QString &msg)
             StringList_Dialog playListDialog(playlist_stringList);
             if(playListDialog.exec())
             {
-                QString fileName = playListDialog.fileName();
+                QString fileName = playListDialog.chosenLine();
                 qDebug() << "fileName" << fileName;
 
-                sendCommand("Choose"+QString(message_delimiter)+fileName+message_ending);
+                sendCommand(d_cmdStrings_map.value(Choose)+QString(message_delimiter)+fileName+message_ending);
             }
         }
     }
@@ -554,6 +528,35 @@ void MainWindow::processMessage(const QString &msg)
             act_record->setIcon(style.standardIcon(QStyle::SP_MediaStop));
             act_record->setText(d_cmdStrings_map.value(Stop));
             d_recordStarted = true;
+        }
+    }
+    if(msg.startsWith(d_cmdStrings_map.value(User)))
+    {
+        QString jsonUserlist_str = msg;
+        int ind_message_delimiter = msg.indexOf(message_delimiter);
+        jsonUserlist_str.remove(0, ind_message_delimiter+1);
+        jsonUserlist_str.remove(message_ending);
+        qDebug() << jsonUserlist_str;
+        QJsonDocument jsonUserlist = QJsonDocument::fromJson(jsonUserlist_str.toUtf8());
+        if(jsonUserlist.isNull())
+            return;
+        if(jsonUserlist.isArray())
+        {
+            QJsonArray jsonArray = jsonUserlist.array();
+            QVariantList userlist_qvariant = jsonArray.toVariantList();
+            QStringList userlist_stringList;
+            foreach(QVariant user, userlist_qvariant)
+            {
+                userlist_stringList << user.toString();
+            }
+            StringList_Dialog userListDialog(userlist_stringList);
+            if(userListDialog.exec())
+            {
+                QString userName = userListDialog.chosenLine();
+                qDebug() << "userName" << userName;
+
+                sendCommand(d_cmdStrings_map.value(User)+QString(message_delimiter)+userName+message_ending);
+            }
         }
     }
     d_pte_NeuroslaveMsg->append(addedText);

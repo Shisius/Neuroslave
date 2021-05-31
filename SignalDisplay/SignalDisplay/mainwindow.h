@@ -34,6 +34,14 @@ class MainWindow : public QMainWindow
         XTOSTRUCT(O(tag, sample_rate, n_channels, gain, tcp_decimation))
     };
 
+    struct GameSettings {
+        std::string subfolder; // Subfolder in playlist folder
+        float duration; // in seconds
+        float volume; // from 0 to 100%
+        uint8_t complexity; // from 2 to 6. Number of music files for choose
+        XTOSTRUCT(O(subfolder, duration, volume, complexity))
+    };
+
     enum class NeuroslaveSampleState : uint8_t {
         GOOD = 0,
         INDEX_ERROR = 1
@@ -110,7 +118,7 @@ private:
     enum class tcpPort
     {
         MSG,
-        SIGNAL
+        SIG
     };
 
     double iXSignal = 0; //position on X axis for adding signal
@@ -132,9 +140,10 @@ private:
         TurnOff,
         Choose,
         Record,
-        Stop
+        Stop,
+        User
     };
-    QMap<Cmd, QString> d_cmdStrings_map = {{TurnOn, "TurnOn"}, {Set, "Set"}, {TurnOff, "TurnOff"}, {Choose, "Choose"}, {Record, "Record"}, {Stop, "Stop"}};
+    QMap<Cmd, QString> d_cmdStrings_map = {{TurnOn, "TurnOn"}, {Set, "Set"}, {TurnOff, "TurnOff"}, {Choose, "Choose"}, {Record, "Record"}, {Stop, "Stop"}, {User, "User"}};
     void createActions();
     void createMenus();
     void createDocks();
