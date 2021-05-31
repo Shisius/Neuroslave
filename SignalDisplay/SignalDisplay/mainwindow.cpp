@@ -4,7 +4,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    resize(500,500);
+    resize(1000,1000);
     d_centralWidget = new QWidget;
     d_signalPlot = new QCustomPlot;
     lbl_connection = new QLabel(tr("No connection"));
@@ -62,7 +62,7 @@ void MainWindow::createDocks()
     d_ptb_NeuroslaveMsg->addWidget(d_plbl_NeuroslaveMsg);
     d_ptb_NeuroslaveMsg->addSeparator();
     d_ptb_NeuroslaveMsg->addAction(clearRadarMsgWindow);
-    d_pdock_NeuroslaveMsg = new QDockWidget("Messages",this);
+    d_pdock_NeuroslaveMsg = new QDockWidget(this);
     //d_pdock_NeuroslaveMsg->set
     //d_pdock_NeuroslaveMsg->addAction(clearRadarMsgWindow);
     d_pdock_NeuroslaveMsg->setTitleBarWidget(d_ptb_NeuroslaveMsg);
@@ -584,7 +584,9 @@ void MainWindow::slot_readTCP_signal()
         bytesAvailable -= sizeof(header.payload_length);
         if(header.payload_length != d_lastEegSession.n_channels)
             return;
-        in >> header.state;
+        uint8_t state;
+        in >> state;
+        header.state = static_cast<NeuroslaveSampleState>(state);
         switch (header.state) {
         case NeuroslaveSampleState::GOOD:
             //FILL ME
