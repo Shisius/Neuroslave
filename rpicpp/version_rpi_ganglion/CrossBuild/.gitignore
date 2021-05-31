@@ -1,0 +1,7 @@
+/tmp/
+*.config
+raise_connection.sh
+upload.sh
+config_upload.sh
+fetchraw.sh
+

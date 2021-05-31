@@ -39,7 +39,7 @@ void GanglionSlave::spis_routine(int bytes_received, bool overflow)
 	if (bytes_received > 0) {
 		switch (spis_rx[0]) {
 			case SPIS_ANSWER:
-				//digitalWrite(SPIS_DATA_READY, 0);
+				digitalWrite(SPIS_DATA_READY, 0);
 				return;
 			case SPIS_START:
 				mcp_sample_queue.pop_first((McpSample*)spis_tx);
@@ -107,7 +107,7 @@ void GanglionSlave::mcp_process_data()
 	// Read sample from MCP3912
 	digitalWrite(MCP_SS, LOW);
 	mcp_send_cmd(CHAN_0, MCP_READ);
-	for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
+	for (uint8_t i = 0; i < NSV_N_CHANNELS; i++) {
     	new_sample.eeg_data[i] = conv24to32(mcp_read_register());
 	}
 	digitalWrite(MCP_SS, HIGH);
@@ -116,7 +116,7 @@ void GanglionSlave::mcp_process_data()
 	// Store sample in buffer
 	mcp_sample_queue.push(new_sample);
 	// Data ready
-	//digitalWrite(SPIS_DATA_READY, 1);
+	digitalWrite(SPIS_DATA_READY, 1);
 }
 
 void GanglionSlave::mcp_config(uint32_t gain, SAMPLE_RATE sample_rate)
@@ -135,6 +135,11 @@ void GanglionSlave::mcp_turn_on_channels() {
 	mcp_send_cmd(CONFIG_1, MCP_WRITE);
 	mcp_write_register(0x00000000);
 	digitalWrite(MCP_SS, HIGH);
+}
+
+int32_t conv24to32(int32_t value24, uint8_t state)
+{
+	return value24 | (state << 24);
 }
 
 int32_t conv24to32(int32_t value24)

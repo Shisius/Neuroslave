@@ -1,0 +1,6 @@
+/tmp/
+/raw/
+*.out
+*.config
+*.bins
+

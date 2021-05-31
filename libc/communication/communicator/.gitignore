@@ -1,0 +1,5 @@
+*.h.autosave
+*.cpp.autosave
+/tcpserver.cpp
+/tcpserver.h
+/communicator.cpp

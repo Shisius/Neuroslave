@@ -13,8 +13,8 @@ protected:
 
 	McpSample storage[MCP_QUEUE_SIZE];
 
-	volatile uint8_t pop_pos;
-	volatile uint8_t push_pos;
+	volatile uint16_t pop_pos;
+	volatile uint16_t push_pos;
 	volatile std::atomic<bool> d_lock;
 	uint32_t current_index;
 
@@ -35,6 +35,7 @@ public:
     	d_lock.store(true, std::memory_order_seq_cst);
 		memcpy(storage + push_pos, &sample, sizeof(McpSample));
 		push_pos++;
+    	if (push_pos == MCP_QUEUE_SIZE) push_pos = 0;
 		d_lock.store(false, std::memory_order_seq_cst);	
 	}
 
@@ -44,6 +45,7 @@ public:
 		memcpy(sample, storage + pop_pos, sizeof(McpSample));
 		current_index = storage[pop_pos].sample_index;
 		pop_pos++;
+    	if (pop_pos == MCP_QUEUE_SIZE) pop_pos = 0;
 		d_lock.store(false, std::memory_order_seq_cst);
 	}
 
@@ -54,6 +56,7 @@ public:
 			memcpy(sample, storage + pop_pos, sizeof(McpSample));
 			current_index++;
 			pop_pos++;
+      		if (pop_pos == MCP_QUEUE_SIZE) pop_pos = 0;
 		} else if (storage[pop_pos].sample_index < current_index + 1) {
 			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::OLD);
 			memcpy(sample, storage + pop_pos, sizeof(McpSample));
@@ -62,6 +65,7 @@ public:
 			memcpy(sample, storage + pop_pos, sizeof(McpSample));
 			current_index = storage[pop_pos].sample_index;
 			pop_pos++;
+      		if (pop_pos == MCP_QUEUE_SIZE) pop_pos = 0;
 		}
 		d_lock.store(false, std::memory_order_seq_cst);
 	}

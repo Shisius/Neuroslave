@@ -2,10 +2,12 @@
 #define _GANGLION_SLAVE_PROTO_H_
 #include "Definitions_Ganglion.h"
 
+#define NSV_N_CHANNELS 2
+
 struct McpSample
 {
 	uint32_t sample_index;
-	int32_t eeg_data[NUM_CHANNELS];
+	int32_t eeg_data[NSV_N_CHANNELS];
 	uint32_t state = 239;
 };
 
@@ -14,10 +16,10 @@ enum class GanglionSlaveEvent : uint32_t
 	SPIS_OVERFLOW = 0x1
 };
 
-enum class McpSampleState : uint32_t
+enum class McpSampleState : uint8_t
 {
 	GOOD = 239,
-	OLD = 555,
+	OLD = 55,
 	SKIPPED = 30
 };
 

@@ -9,6 +9,8 @@ import multiprocessing as mp
 import threading
 import signal
 from nsv_def import *
+from nsv_data_handler import *
+from ganglion_spi import *
 
 MP_CTX = mp.get_context('spawn')
 
@@ -48,7 +50,7 @@ class NeuroslaveTcpServer:
         self.clientSock = None
         self.dataHandler = None
         self.dataSource = None
-        self.data_srv_running = MP_CTX.Value('i', 0)
+        self.state = MP_CTX.Value('i', NSV_STATE_IDLE)
         self.data_pipe_ctl, self.data_pipe_src = MP_CTX.Pipe()
         self.choosen_music = ""
 
@@ -64,9 +66,11 @@ class NeuroslaveTcpServer:
         try:
             self.clientSock.close()
             self.servSock.close()
-            self.data_srv_running.value = 0
+            self.state = NSV_STATE_TERM
             self.dataHandler.join()
             self.dataHandler.kill()
+            self.dataSource.join()
+            self.dataSource.kill()
         except Exception as e:
             print(e)
 
@@ -112,11 +116,12 @@ class NeuroslaveTcpServer:
 
     def session_start(self, msg):
         self.send_session()
-        self.data_srv_running.value = 1
+        self.state.value = NSV_STATE_SESSION
+        self.data_pipe_ctl.send(self.session)
         return True
 
     def session_stop(self, msg):
-        self.data_srv_running.value = 2
+        self.state.value = NSV_STATE_IDLE
         self.send_msg('Stopped')
         return True
 
@@ -148,58 +153,65 @@ class NeuroslaveTcpServer:
         return False
 
     def record_start(self, msg):
-        self.timer = threading.Timer(10, self.send_record_finished)
-        self.timer.start()
+        #self.timer = threading.Timer(10, self.send_record_finished)
+        #self.timer.start()
+        self.state.value = NSV_STATE_RECORD
         return True
 
     def record_stop(self, msg):
-        self.timer.cancel()
+        #self.timer.cancel()
+        self.state.value = NSV_STATE_SESSION
         self.send_record_finished()
         return True
 
     def start_data_handler(self):
-        pass
+        self.dataHandler = MP_CTX.Process(target = nsv_data_handler_process, args = (self.data_pipe_ctl, self.state))
+        self.dataHandler.start()
+        print("Data handler started")
 
     def start_data_source(self):
-        pass
+        self.dataSource = MP_CTX.Process(target = ganglion_spi_process, args = (self.data_pipe_src, self.state))
+        self.dataSource.start()
+        print("Data source started")
 
     def run(self):
         self.servSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
-        self.servSock.settimeout(SRV_TIMEOUT)
+        #self.servSock.settimeout(SRV_TIMEOUT)
         self.servSock.bind(('', SRV_MSG_PORT))
         self.servSock.listen(1)
         self.srv_running = True
         while self.srv_running:
-            try:
-                self.clientSock, self.clientAddr = self.servSock.accept()
-                self.clientSock.settimeout(SRV_TIMEOUT)
-                print("Accepted")
-                self.data_srv_running.value = 2
-                self.dataHandler = MP_CTX.Process(target = data_process, args = (self.data_srv_running,))
-                self.dataHandler.start()
-                print("Data srv started")
-                while self.srv_running:
-                    try:
-                        clientRequest = self.clientSock.recv(1024)
-                        print(clientRequest)
-                        if not clientRequest:
-                            print("None recevied")
-                        self.process_cmd(clientRequest)
-                    except socket.error as e:
-                        print("Recv error: ", e)
-                        if isinstance(e.args, tuple):
-                            if len(e.args) > 0:
-                                if e.args[0] == socket.errno.EPIPE:
-                                    break
-                    except Exception as e:
-                        print("Another Recv error", e)
-                self.data_srv_running.value = 0
-                self.dataHandler.join()
-                self.dataHandler.kill()
-                self.clientSock.close()
-                print("Client closed")
-            except Exception as e:
-                print("Accept error", e)
+            #try:
+            self.clientSock, self.clientAddr = self.servSock.accept()
+            #self.clientSock.settimeout(SRV_TIMEOUT)
+            print("Accepted")
+            self.state.value = NSV_STATE_IDLE
+            self.start_data_handler()
+            self.start_data_source()
+            while self.srv_running:
+                #try:
+                clientRequest = self.clientSock.recv(1024)
+                print(clientRequest)
+                if not clientRequest:
+                    print("None recevied")
+                self.process_cmd(clientRequest)
+                # except socket.error as e:
+                #     print("Recv error: ", e)
+                #     if isinstance(e.args, tuple):
+                #         if len(e.args) > 0:
+                #             if e.args[0] == socket.errno.EPIPE:
+                #                 break
+                # except Exception as e:
+                #     print("Another Recv error", e)
+            self.state.value = NSV_STATE_TERM
+            self.dataHandler.join()
+            self.dataHandler.kill()
+            self.dataSource.join()
+            self.dataSource.kill()
+            self.clientSock.close()
+            print("Client closed")
+            #except Exception as e:
+            #    print("Accept error", e)
         self.terminate()
         print("Server closed")
 
