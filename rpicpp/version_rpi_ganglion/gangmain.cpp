@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <atomic>
+#include <thread>
 extern "C" {
 	#include <wiringPiSPI.h>
 	#include <wiringPi.h>
@@ -28,6 +29,11 @@ McpSample mcp[n_samples + 100];
 uint8_t cmd_start = 2;
 std::atomic<bool> drdy;
 
+TcpServerStream * msg_srv;
+TcpServerStream * data_srv;
+std::atomic<bool> is_alive;
+std::atomic<bool> is_started;
+
 void drdy_routine(void) {
 	// if (i_sample >= n_samples) {
 	// 	i_sample++;
@@ -41,16 +47,61 @@ void drdy_routine(void) {
 	drdy.store(true, std::memory_order_relaxed);
 }
 
+void recv_process()
+{
+	std::string msg;
+	msg_srv = new TcpServerStream(7239);
+	msg_srv->start();
+	while (true) {
+		if (msg_srv->receiveMessage(msg)) {
+			if (msg.compare(0, 6, "TurnOn")) {
+				is_started.store(true, std::memory_order_relaxed);
+			} else if (msg.compare(0, 7, "TurnOff")) {
+				is_started.store(false, std::memory_order_relaxed);
+				break;
+			}
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	is_alive = false;
+	delete msg_srv;
+}
+
+void send_process()
+{
+	std::string msg;
+	data_srv = new TcpServerStream(8239);
+	data_srv->start()
+
+	while (is_alive.load(std::memory_order_relaxed)) {
+		if (is_started.load(std::memory_order_relaxed)) {
+
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+
+	delete data_srv;
+}
+
 int main(int argc, char** argv)
 {
 
-	
-	
+	is_alive.store(true, std::memory_order_relaxed);;
+
 	wiringPiSetup();
+
 	uint32_t s555 = 0;
 	drdy.store(false, std::memory_order_relaxed);
 	printf("Hep\n");
 	std::cout << wiringPiSPISetup (0, 10000000) << std::endl;
+
+
+	while (!(is_started.load(std::memory_order_relaxed))) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+
+	
+	
 
 
 	std::cout << wiringPiISR (6, INT_EDGE_RISING,  drdy_routine) << std::endl;
