@@ -2,3 +2,4 @@
 /release/
 /profile/
 *.user
+build*/

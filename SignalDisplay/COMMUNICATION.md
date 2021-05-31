@@ -33,27 +33,63 @@ Message should have syntax like "Command:Parameter:Value\n\r".
 Value can be JSON string.
 Command types:
 1. TurnOn. String "TurnOn". Parameters: None.
+	```
 	Example: "TurnOn\n\r"
 	Answer: "EegSession:{current session parameters here}\n\r"
+	```
 2. Set. String "Set". Parameter: "EegSession". Value: JSON EegSession struct representation.
+	```
 	Example: "Set:EegSession:{"tag":"hep","sample_rate":1000,"n_channels":4,"gain":1,"tcp_decimation":10}\n\r"
 	Answer: "Set:Accepted\n\r"
+	```
 3. TurnOff. String "TurnOff". Parameters: None.
+	```
 	Example: "TurnOff\n\r"
 	Answer: "TurnOff:Accepted\n\r"
+	```
 4. Choose. String "Choose". If no parameters given, Neuroslave returns Music playlist.
+	```
 	Example: "Choose\n\r"
 	Answer: "Playlist:["Yesterday.wav", "Imagine.mp3", "Yellow submarine.ogg"]\n\r"
+	```
 5. Choose. String "Choose:File name.ext\n\r". If string parameter (file name) given, this file will be choosen. 
+	```
 	Example: "Choose:Imagine.mp3\n\r"
 	Answer: "Choose:Accepted\n\r"
+	```
 6. Record. String "Record". Parameters: None.
+	```
 	Example: "Record\n\r"
 	Answer1: "Record:Accepted\n\r". Immediately.
 	Answer2: "Record:Finished\n\r". Neuroslave will send it when record is finished.
+	```
 7. Stop. String "Stop". Parameter:None.
+	```
 	Example: "Stop\n\r"
 	Answer: "Stop:Accepted\n\r"
+	```
+8. User. String "User". If no parameters given Neuroslave returns Users list.
+	```
+	Example: "User\n\r"
+	Answer: "Users:["Antony", "Alenka", "SWK"]\n\r"
+	```
+9. User. String "User:User_name\n\r". If string parameter (user name) given, this user will be choosen.
+	```
+	Example: "User:Antony\n\r"
+	Answer: "User:Accepted\n\r"
+	```
+10. Game. String "Game". Parameter: None. After this command user will listen a random part of random music from playlist. After listening user must choose what music he listened.
+	```
+	Example: "Game\n\r"
+	Answer1: "Game:Accepted\n\r". Immediately.
+	Answer2: "Game:["Yesterday.wav", "Imagine.mp3", "Yellow submarine.ogg"]". User must choose one. Then Command 11 will be sent.
+	```
+11. Game. String "Game:File_name.ext\n\r". This is the answer on Answer2 of Command 10. Neuroslave return music file that was played. If command and answer are the same, user wins - otherwise - lose.
+	```
+	Example: "Game:Imagine.mp3\n\r"
+	Answer: "Game:Yesterday.wav". 
+	```
+
 
 ## TCP Port for binary data
 This port is used for binary messages sending from Neuroslave to GUI
