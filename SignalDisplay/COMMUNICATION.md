@@ -40,6 +40,15 @@ Command answer example: "Record:Finished\n\r"
 	};
 	Example: "GameSettings:{"subfolder":"Beatles","duration":10.0,"volume":100,"complexity":4}\n\r"
 	```
+4. Connection settings:
+	C++ Structure:
+	```
+	struct ConnectionSettings {
+		std::string ssid;
+		std::string password;
+	};
+	Example: "ConnectionSettings:{"ssid":"hep","password":"chanin"}\n\r"
+	```
 
 ### GUI to Neuroslave communication
 Neuroslave can receive text and json messages as commands.
@@ -108,6 +117,7 @@ Command types:
 	Example: "Set:GameSettings:{"subfolder":"Beatles","duration":10.0,"volume":100,"complexity":4}\n\r"
 	Answer: "Set:Accepted\n\r"
 	```
+13. Connect. String "Connect". Parameter: "ConnectionSettings". Value: JSON ConnectionSettings struct representation.
 
 ## TCP Port for binary data
 This port is used for binary messages sending from Neuroslave to GUI

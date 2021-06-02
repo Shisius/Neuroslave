@@ -4,9 +4,20 @@ import multiprocessing as mp
 
 EEG_SESSION = {'tag': 'hep',
                'sample_rate': 1000,
-               'n_channels': 4}
+               'n_channels': 4,
+               'gain': 1,
+               'tcp_decimation':1}
+
+GAME_SETTINGS = {'subfolder': "",
+                 'duration': 10.0,
+                 'volume': 100,
+                 'complexity': 4}
+
+CONNECTION_SETTINGS = {'ssid': "",
+                       'password': ""}
 
 EEG_SESSION_STR = b'EegSession'
+GAME_SETTINGS_STR = b'GameSettings'
 EEG_SAMPLE_HEADER = 0xACDC
 
 NSV_STATE_TERM = 0
@@ -22,6 +33,7 @@ MCP_SAMPLE_RULE = 'I4iI'
 NSV_SAMPLE_INDEX_ERROR = 0x1
 
 PLAYLIST_PATH = 'playlist'
+USERS_PATH = 'users'
 
 SRV_TIMEOUT = 10
 SRV_MSG_PORT = 7239
@@ -29,7 +41,11 @@ SRV_DATA_PORT = 8239
 MSG_DELIM = b':'
 MSG_END = b'\n\r'
 
+def ConnectionSettings():
+    return copy.deepcopy(CONNECTION_SETTINGS)
 
+def GameSettings():
+    return copy.deepcopy(GAME_SETTINGS)
 
 def EegSession():
     return copy.deepcopy(EEG_SESSION)
