@@ -12,10 +12,10 @@ MainWindow::MainWindow(QWidget *parent)
     lbl_connection->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
 
-    layout = new QVBoxLayout;
-    layout->addWidget(lbl_connection);
-    layout->addWidget(d_signalPlot);
-    d_centralWidget->setLayout(layout);
+    d_centralLayout = new QVBoxLayout;
+    d_centralLayout->addWidget(lbl_connection);
+    d_centralLayout->addWidget(d_signalPlot);
+    d_centralWidget->setLayout(d_centralLayout);
     setCentralWidget(d_centralWidget);
 
     createMenus();
@@ -75,15 +75,26 @@ QToolBar* MainWindow::createToolBar()
 {
     QToolBar* ptb = new QToolBar();
     QCommonStyle style;
-    act_on_off = ptb->addAction(style.standardIcon(QStyle::SP_DialogYesButton), d_cmdStrings_map.value(TurnOn), this, SLOT(slot_start()));
-    act_playlist   = ptb->addAction(style.standardIcon(QStyle::SP_DirIcon), "Playlist", this, SLOT(slot_chooseMusic()));
-    act_set        = ptb->addAction(style.standardIcon(QStyle::SP_DialogSaveButton), d_cmdStrings_map.value(Set), this, SLOT(slot_set()));
-    act_record     = ptb->addAction(style.standardIcon(QStyle::SP_MediaPlay), d_cmdStrings_map.value(Record), this, SLOT(slot_record()));
+    act_on_off     = ptb->addAction(QIcon(":/img/turnon.png"), d_cmdStrings_map.value(TurnOn), this, SLOT(slot_start()));
+    ptb->addSeparator();
+    act_EegSessionSet        = ptb->addAction(QIcon(":/img/EegSettings.png"),"EegSession settings", this, SLOT(slot_EegSessionSet()));
+    ptb->addSeparator();
+    act_playlist   = ptb->addAction(QIcon(":/img/playlist.png"), "Playlist", this, SLOT(slot_chooseMusic()));
+    ptb->addSeparator();
+    act_record     = ptb->addAction(QIcon(":/img/play.png"), d_cmdStrings_map.value(Record), this, SLOT(slot_record()));
+    ptb->addSeparator();
+    act_gameSet    = ptb->addAction(QIcon(":/img/GameSettings.png"), d_cmdStrings_map.value(Game) + " settings", this, SLOT(slot_gameSet()));
+    ptb->addSeparator();
+    act_game       = ptb->addAction(QIcon(":/img/game.png"), d_cmdStrings_map.value(Game), this, SLOT(slot_game()));
+
+    ptb->setIconSize(QSize(50,50));
 
     act_on_off->setDisabled(true);
     act_playlist  ->setDisabled(true);
-    act_set       ->setDisabled(true);
+    act_EegSessionSet->setDisabled(true);
     act_record    ->setDisabled(true);
+    act_game->setDisabled(true);
+    act_gameSet->setDisabled(true);
     return ptb;
 }
 
@@ -113,28 +124,33 @@ void MainWindow::slot_start()
 void MainWindow::start()
 {
     d_sessionStarted = true;
-    QCommonStyle style;
-    act_on_off->setIcon(style.standardIcon(QStyle::SP_DialogNoButton));
+    //QCommonStyle style;
+    act_on_off->setIcon(QIcon(":/img/turnoff.png"));
     act_on_off->setText(d_cmdStrings_map.value(TurnOff));
     act_record->setEnabled(true);
+    act_game->setEnabled(true);
+    act_gameSet->setEnabled(true);
+    d_gameState = GameState::Finished;
+    act_EegSessionSet->setDisabled(true);
 }
 
 void MainWindow::stop()
 {
     sendCommand(d_cmdStrings_map.value(TurnOff)+message_ending);
     d_sessionStarted = false;
-    QCommonStyle style;
-    act_on_off->setIcon(style.standardIcon(QStyle::SP_DialogYesButton));
+    //QCommonStyle style;
+    act_on_off->setIcon(QIcon(":/img/turnon.png"));
     act_on_off->setText(d_cmdStrings_map.value(TurnOn));
     act_record->setEnabled(false);
+    act_EegSessionSet->setEnabled(true);
 }
 
-void MainWindow::slot_set()
+void MainWindow::slot_EegSessionSet()
 {
     QString str_sendCmd;
 
-    QString str_sarStruct = QString::fromStdString(radar::to_json(d_lastEegSession));
-    sarStructSettingsDialog dialog_sarStructSettings(str_sarStruct, this);
+    QString str_EegSession = QString::fromStdString(radar::to_json(d_lastEegSession));
+    sarStructSettingsDialog dialog_sarStructSettings(str_EegSession, "EegSession settings", this);
     if(dialog_sarStructSettings.exec())
     {
         QString eegSession_str = dialog_sarStructSettings.changedSarStructString();
@@ -151,7 +167,31 @@ void MainWindow::slot_set()
             QMessageBox::information(this, tr("Settings"), tr(error.toStdString().c_str()));
         }
     }
+}
 
+void MainWindow::slot_gameSet()
+{
+    QString str_sendCmd;
+    GameSettings gameSettings;
+
+    QString str_gameSettings = QString::fromStdString(radar::to_json(gameSettings));
+    sarStructSettingsDialog dialog_sarStructSettings(str_gameSettings, "Game settings", this);
+    if(dialog_sarStructSettings.exec())
+    {
+        QString gameSettings_str = dialog_sarStructSettings.changedSarStructString();
+        EegSession eegSession;
+        if(radar::from_json(gameSettings_str.toStdString(), gameSettings))
+        {
+            str_sendCmd = tr("%1%2%3%4").arg(d_cmdStrings_map.value(Set)).arg(message_delimiter).arg(gameSettings_str).arg(message_ending);
+            //qDebug() << "str_sendCmd " << str_sendCmd;
+            sendCommand(str_sendCmd);
+        }
+        else
+        {
+            QString error = "An error occured while settings.";
+            QMessageBox::information(this, tr("Settings"), tr(error.toStdString().c_str()));
+        }
+    }
 }
 
 void MainWindow::slot_clearRadarMsgWindow()
@@ -180,6 +220,12 @@ void MainWindow::slot_record()
     }
 }
 
+void MainWindow::slot_game()
+{
+    sendCommand(d_cmdStrings_map.value(Game)+message_ending);
+    d_gameState = GameState::Started;
+}
+
 void MainWindow::initConnection()
 {
     qDebug() << "initConnection";
@@ -193,8 +239,8 @@ void MainWindow::initConnection()
     lbl_port_msg->hide();
     lbl_port_signal->hide();
 
-    layout->insertWidget(1, lbl_port_msg);
-    layout->insertWidget(1, lbl_port_signal);
+    d_centralLayout->insertWidget(1, lbl_port_msg);
+    d_centralLayout->insertWidget(1, lbl_port_signal);
 
     //lbl_port_msg->setGeometry(ui->lbl_connection->geometry());
     //lbl_port_signal->setGeometry(ui->lbl_connection->geometry());
@@ -228,14 +274,14 @@ void MainWindow::slot_connection()
        dialog_connectionSettings->setIp(d_serverIP);
        dialog_connectionSettings->setPort_msg(d_port_msg);
        dialog_connectionSettings->setPort_signal(d_port_signal);
-       dialog_connectionSettings->setUsername(d_username);
+       dialog_connectionSettings->setLogin(d_login);
        dialog_connectionSettings->setPassword(d_password);
     }
     if(dialog_connectionSettings->exec())
     {
-        if(d_username != dialog_connectionSettings->username())
+        if(d_login != dialog_connectionSettings->login())
         {
-            d_username = dialog_connectionSettings->username();
+            d_login = dialog_connectionSettings->login();
         }
         if(d_password != dialog_connectionSettings->password())
         {
@@ -382,12 +428,13 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
         {
             lbl_port_msg->setStyleSheet("color: red");
             act_record    ->setEnabled(false);
+            stop();
         }
         lbl_port_msg->adjustSize();
         progbar_connecting_msg->hide();
         act_on_off->setEnabled(isConnected);
         act_playlist  ->setEnabled(isConnected);
-        act_set       ->setEnabled(isConnected);        
+        act_EegSessionSet       ->setEnabled(isConnected);
 
         if(d_tcpSocket_signal->state() == QAbstractSocket::ConnectingState){
             lbl_port_signal->setText(tr("Connection.."));
@@ -417,6 +464,7 @@ void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
             lbl_port_msg->setText(tr("Connection.."));
             lbl_port_msg->adjustSize();
             lbl_port_msg->setStyleSheet("color: black");
+            progbar_connecting_msg->resize(lbl_port_msg->size());
             progbar_connecting_msg->show();
 
             return;
@@ -484,82 +532,106 @@ void MainWindow::processMessage(const QString &msg)
     if(msg.startsWith(textWarning_beginning)){
         addedText = QString("<span style=\" color:#ff8c00;\">%1</span>").arg(addedText);
     }
+//    if(msg.startsWith(d_cmdStrings_map.value(TurnOn){
+//        act_game
+//    }
     if(msg.startsWith(msgPlaylist_beginning)){
         qDebug() << addedText;
-        QString jsonPlaylist_str = msg;
-        int ind_message_delimiter = msg.indexOf(message_delimiter);
-        jsonPlaylist_str.remove(0, ind_message_delimiter+1);
-        jsonPlaylist_str.remove(message_ending);
-        qDebug() << jsonPlaylist_str;
-        QJsonDocument jsonPlaylist = QJsonDocument::fromJson(jsonPlaylist_str.toUtf8());
-        if(jsonPlaylist.isNull())
-            return;
-        if(jsonPlaylist.isArray())
-        {
-            QJsonArray jsonArray = jsonPlaylist.array();
-            QVariantList playlist_qvariant = jsonArray.toVariantList();
-            QStringList playlist_stringList;
-            foreach(QVariant track, playlist_qvariant)
-            {
-                playlist_stringList << track.toString();
-            }
-            StringList_Dialog playListDialog(playlist_stringList);
-            if(playListDialog.exec())
-            {
-                QString fileName = playListDialog.chosenLine();
-                qDebug() << "fileName" << fileName;
-
-                sendCommand(d_cmdStrings_map.value(Choose)+QString(message_delimiter)+fileName+message_ending);
-            }
-        }
+        QString fileName = chooseFromJsonArray(msg, "Playlist");
+        if(!fileName.isEmpty())
+            sendCommand(d_cmdStrings_map.value(Choose)+QString(message_delimiter)+fileName+message_ending);
     }
     if(msg.startsWith(d_cmdStrings_map.value(Record)))
     {
         if(msg.contains(RECORD_FINISHED))
         {
             QCommonStyle style;
-            act_record->setIcon(style.standardIcon(QStyle::SP_MediaPlay));
+            act_record->setIcon(QIcon(":/img/play.png"));
             act_record->setText(d_cmdStrings_map.value(Record));
             d_recordStarted = false;
         }
         if(msg.contains(ACCEPTED))
         {
             QCommonStyle style;
-            act_record->setIcon(style.standardIcon(QStyle::SP_MediaStop));
+            act_record->setIcon(QIcon(":/img/stop.png"));
             act_record->setText(d_cmdStrings_map.value(Stop));
             d_recordStarted = true;
         }
     }
     if(msg.startsWith(d_cmdStrings_map.value(User)))
     {
-        QString jsonUserlist_str = msg;
-        int ind_message_delimiter = msg.indexOf(message_delimiter);
-        jsonUserlist_str.remove(0, ind_message_delimiter+1);
-        jsonUserlist_str.remove(message_ending);
-        qDebug() << jsonUserlist_str;
-        QJsonDocument jsonUserlist = QJsonDocument::fromJson(jsonUserlist_str.toUtf8());
-        if(jsonUserlist.isNull())
-            return;
-        if(jsonUserlist.isArray())
+        if(msg.contains(ACCEPTED))
         {
-            QJsonArray jsonArray = jsonUserlist.array();
-            QVariantList userlist_qvariant = jsonArray.toVariantList();
-            QStringList userlist_stringList;
-            foreach(QVariant user, userlist_qvariant)
+            QMessageBox::information(0, tr("User"), "Hi," + d_userName + "!");
+        } else {
+            d_userName = chooseFromJsonArray(msg, "Choose username");
+            sendCommand(d_cmdStrings_map.value(User)+QString(message_delimiter)+d_userName+message_ending);
+        }
+    }
+    if(msg.startsWith(d_cmdStrings_map.value(Game)))
+    {
+        if(d_gameState == GameState::Started)
+        {
+            if(msg.contains(ACCEPTED))
             {
-                userlist_stringList << user.toString();
+                act_game->setDisabled(true);
+            } else {
+                QString chosenTrack = chooseFromJsonArray(msg, "Choose track");
+                if(!chosenTrack.isEmpty())
+                {
+                    d_gameUserAnswer = d_cmdStrings_map.value(Game)+QString(message_delimiter)+chosenTrack+message_ending;
+                    sendCommand(d_gameUserAnswer);
+                    d_gameState = GameState::WaitingForGameAnswer;
+                    //d_isWaitingForGameAnswer = true;
+                }
             }
-            StringList_Dialog userListDialog(userlist_stringList);
-            if(userListDialog.exec())
+        }
+        else{
+            if(d_gameState == GameState::WaitingForGameAnswer)
             {
-                QString userName = userListDialog.chosenLine();
-                qDebug() << "userName" << userName;
-
-                sendCommand(d_cmdStrings_map.value(User)+QString(message_delimiter)+userName+message_ending);
+                if(d_gameUserAnswer == msg)
+                {
+                    QMessageBox::information(0, tr("Game result"), tr("RIGHT!"));
+                } else {
+                    QMessageBox::information(0, tr("Game result"), tr("WRONG!"));
+                }
+                d_gameState = GameState::Finished;
+                act_game->setEnabled(true);
             }
         }
     }
     d_pte_NeuroslaveMsg->append(addedText);
+}
+
+QString MainWindow::chooseFromJsonArray(const QString & jsonArray_str, const QString &windowTitle)
+{
+    QString jA_str = jsonArray_str;
+    int ind_message_delimiter = jA_str.indexOf(message_delimiter);
+    jA_str.remove(0, ind_message_delimiter+1);
+    jA_str.remove(message_ending);
+    qDebug() << jA_str;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jA_str.toUtf8());
+    if(jsonDoc.isNull())
+        return "";
+    if(jsonDoc.isArray())
+    {
+        QJsonArray jsonArray = jsonDoc.array();
+        QVariantList list_qvariant = jsonArray.toVariantList();
+        QStringList list_stringList;
+        foreach(QVariant user, list_qvariant)
+        {
+            list_stringList << user.toString();
+        }
+        StringList_Dialog listDialog(list_stringList, windowTitle);
+        if(listDialog.exec())
+        {
+            QString line = listDialog.chosenLine();
+            qDebug() << "line" << line;
+            return line;
+            //sendCommand(d_cmdStrings_map.value(User)+QString(message_delimiter)+userName+message_ending);
+        }
+    }
+    return "";
 }
 
 void MainWindow::slot_readTCP_signal()
@@ -748,7 +820,7 @@ void MainWindow::writeSettings()
     qDebug() << "writeSettings()";
     QSettings settings("Neuroslave", "EEG_GUI");
     settings.beginGroup("serverAddress");
-    settings.setValue("Username", d_username);
+    settings.setValue("Login", d_login);
     settings.setValue("Password", d_password);
     settings.setValue("IP", d_serverIP);
     settings.setValue("port_msg", d_port_msg);
@@ -765,7 +837,7 @@ void MainWindow::readSettings()
 {
     qDebug() << "readSettings";
     QSettings settings("Neuroslave", "EEG_GUI");
-    d_username = settings.value("serverAddress/Username","").toString();
+    d_login = settings.value("serverAddress/Login","").toString();
     d_password = settings.value("serverAddress/Password","").toString();
     d_serverIP = settings.value("serverAddress/IP","").toString();
     d_port_msg = static_cast<quint16>(settings.value("serverAddress/port_msg", 0).toUInt());

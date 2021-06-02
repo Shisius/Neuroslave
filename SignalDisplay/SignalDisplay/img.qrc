@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>img/EegSettings.png</file>
+        <file>img/game.png</file>
+        <file>img/GameSettings.png</file>
+        <file>img/playlist.png</file>
+        <file>img/turnoff.png</file>
+        <file>img/turnon.png</file>
+        <file>img/play.png</file>
+        <file>img/stop.png</file>
+    </qresource>
+</RCC>

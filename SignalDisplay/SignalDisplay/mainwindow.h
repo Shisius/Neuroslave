@@ -76,24 +76,26 @@ private slots:
     void slot_tcpDisconnected_signal();
     void slot_clearRadarMsgWindow();
     void slot_start();    
-    void slot_set();
+    void slot_EegSessionSet();
     void slot_chooseMusic();
     void slot_record();
+    void slot_game();
+    void slot_gameSet();
 
 private:
     QWidget *d_centralWidget;
-    QVBoxLayout *layout;
-    QLabel* lbl_connection = nullptr;
-    QCustomPlot *d_signalPlot;
-    QList<QCPAxis*> d_allAxes;
-    QMenu* menu_settings;
-    //QToolBar* ptb;
+    QVBoxLayout *d_centralLayout;
+
+    QMenu* menu_settings;    
     QAction* act_connection;
+
     //Tool bar:
     QAction* act_on_off;
     QAction* act_playlist;
-    QAction* act_set;
+    QAction* act_EegSessionSet;
     QAction* act_record;
+    QAction* act_game;
+    QAction* act_gameSet;
 
     //Bottom dock:
     QToolBar* d_ptb_NeuroslaveMsg;
@@ -101,11 +103,13 @@ private:
     QDockWidget* d_pdock_NeuroslaveMsg;
     QTextEdit* d_pte_NeuroslaveMsg;
 
+    //Connection
+    QLabel* lbl_connection = nullptr;
     DialogConnectionSettings *dialog_connectionSettings = nullptr;
     QString d_serverIP;
     quint16 d_port_msg;
     quint16 d_port_signal;
-    QString d_username;
+    QString d_login;
     QString d_password;
     QTcpSocket *d_tcpSocket_msg = nullptr;
     QTcpSocket *d_tcpSocket_signal = nullptr;
@@ -121,14 +125,16 @@ private:
         SIG
     };
 
+    //Graphs
+    QCustomPlot *d_signalPlot;
+    QList<QCPAxis*> d_allAxes;
     double iXSignal = 0; //position on X axis for adding signal
+    QVector<QCPGraph*> d_graph;
+    QVector<QVector<double>> d_points;
 
     QString d_textMessage;
 
-    EegSession d_lastEegSession;
-
-    QVector<QCPGraph*> d_graph;
-    QVector<QVector<double>> d_points;
+    EegSession d_lastEegSession;    
 
     bool d_sessionStarted = false;
     bool d_recordStarted = false;
@@ -141,9 +147,28 @@ private:
         Choose,
         Record,
         Stop,
-        User
+        User,
+        Game
     };
-    QMap<Cmd, QString> d_cmdStrings_map = {{TurnOn, "TurnOn"}, {Set, "Set"}, {TurnOff, "TurnOff"}, {Choose, "Choose"}, {Record, "Record"}, {Stop, "Stop"}, {User, "User"}};
+    QMap<Cmd, QString> d_cmdStrings_map = {{TurnOn, "TurnOn"},
+                                           {Set, "Set"},
+                                           {TurnOff, "TurnOff"},
+                                           {Choose, "Choose"},
+                                           {Record, "Record"},
+                                           {Stop, "Stop"},
+                                           {User, "User"},
+                                           {Game, "Game"}};
+    bool d_isWaitingForGameAnswer = false;
+    QString d_gameUserAnswer;
+    QString d_userName;
+
+    enum class GameState
+    {
+        Started,
+        WaitingForGameAnswer,
+        Finished
+    } d_gameState;
+
     void createActions();
     void createMenus();
     void createDocks();
@@ -163,6 +188,7 @@ private:
     void sendCommand(const QString & cmd);
     void stop();
     void start();
+    QString chooseFromJsonArray(const QString & jsonArray_str, const QString & windowTitle);
 
     void writeSettings();
     void readSettings();

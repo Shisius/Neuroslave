@@ -37,3 +37,7 @@ FORMS += \
     dialogconnectionsettings.ui
 
 INCLUDEPATH += ../
+
+RESOURCES += \
+    img.qrc
+

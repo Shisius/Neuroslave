@@ -32,7 +32,7 @@
 //    qDebug() << connect(d_sarSessionSettings_model, SIGNAL(dataChanged(const QModelIndex &, const QModelIndex &)), SLOT(slot_dataChanged(const QModelIndex &)));
 //}
 
-sarStructSettingsDialog::sarStructSettingsDialog(const QString& str_sarStruct, QWidget *parent) : QDialog(parent), str_sarStruct(str_sarStruct)
+sarStructSettingsDialog::sarStructSettingsDialog(const QString& str_sarStruct, const QString& windowTitle, QWidget *parent) : QDialog(parent), str_sarStruct(str_sarStruct)
 {
     resize(500, 500);
     //********SarStructModelAndView*************//
@@ -48,7 +48,7 @@ sarStructSettingsDialog::sarStructSettingsDialog(const QString& str_sarStruct, Q
 
     mainLayout = new QVBoxLayout;
 
-    setWindowTitle(tr("Eegsession parameters"));
+    setWindowTitle(windowTitle);
 
 
     mainLayout->addWidget(d_sarStructSettings_view);

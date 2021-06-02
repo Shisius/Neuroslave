@@ -15,7 +15,7 @@ private:
 
 
 public:
-    StringList_Dialog(const QStringList &, QWidget *parent = 0);
+    StringList_Dialog(const QStringList &, const QString &, QWidget *parent = 0);
     QString chosenLine();
 };
 

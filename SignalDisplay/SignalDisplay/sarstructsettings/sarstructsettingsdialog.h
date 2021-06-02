@@ -17,7 +17,7 @@ class sarStructSettingsDialog : public QDialog
 {
     Q_OBJECT
 public:    
-    sarStructSettingsDialog(const QString&, QWidget *parent = 0);
+    sarStructSettingsDialog(const QString&, const QString&, QWidget *parent = 0);
     QString changedSarStructString();
 private slots:
     void slot_dataChanged(const QModelIndex &index);

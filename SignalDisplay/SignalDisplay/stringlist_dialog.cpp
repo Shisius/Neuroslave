@@ -1,6 +1,6 @@
 #include "stringlist_dialog.h"
 
-StringList_Dialog::StringList_Dialog(const QStringList & strList, QWidget *parent)
+StringList_Dialog::StringList_Dialog(const QStringList & strList, const QString &windowTitle, QWidget *parent)
 
 {
     d_model.setStringList(strList);
@@ -13,7 +13,7 @@ StringList_Dialog::StringList_Dialog(const QStringList & strList, QWidget *paren
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
 
-    setWindowTitle(tr("Eegsession parameters"));
+    setWindowTitle(windowTitle);
 
     d_pListView = new QListView;
     d_pListView->setModel(&d_model);

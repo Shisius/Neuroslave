@@ -14,7 +14,7 @@ class DialogConnectionSettings : public QDialog
     QString d_serverIP;
     quint16 d_port_msg;
     quint16 d_port_sig;
-    QString d_username;
+    QString d_login;
     QString d_password;
 
 public:
@@ -23,14 +23,14 @@ public:
     QString serverIP();
     quint16 serverPort_msg();
     quint16 serverPort_signal();
-    QString username();
+    QString login();
     QString password();
 
 
     void setIp(const QString &);
     void setPort_msg(quint16);
     void setPort_signal(quint16);
-    void setUsername(const QString &);
+    void setLogin(const QString &);
     void setPassword(const QString &);
 
 private slots:

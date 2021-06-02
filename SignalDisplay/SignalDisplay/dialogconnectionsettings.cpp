@@ -54,9 +54,9 @@ void DialogConnectionSettings::setPort_signal(quint16 port)
     ui->le_port_sig->setText(port_str.setNum(port));
 }
 
-void DialogConnectionSettings::setUsername(const QString &username)
+void DialogConnectionSettings::setLogin(const QString &login)
 {
-    ui->le_username->setText(username);
+    ui->le_login->setText(login);
 }
 
 void DialogConnectionSettings::setPassword(const QString &password)
@@ -83,10 +83,10 @@ quint16 DialogConnectionSettings::serverPort_signal()
     return ui->le_port_sig->text().toUShort();
 }
 
-QString DialogConnectionSettings::username()
+QString DialogConnectionSettings::login()
 {
-    qDebug() << "username"<< ui->le_username->text().toLatin1().data();
-    return ui->le_username->text().toLatin1().data();
+    qDebug() << "login"<< ui->le_login->text().toLatin1().data();
+    return ui->le_login->text().toLatin1().data();
 }
 
 QString DialogConnectionSettings::password()
