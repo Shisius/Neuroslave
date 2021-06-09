@@ -122,9 +122,9 @@ void TcpServerStream::sendThread()
         if (d_sendMsgQueue.try_pop(sendMsg))
         {
 
-            cout << "sendThread: from queue:  " << endl;
+            //cout << "sendThread: from queue:  " << endl;
             //cout.width(sendMsg.size());
-            cout << sendMsg.m_data << endl;
+            //cout << sendMsg.m_data << endl;
             //if (d_tcpServer->sendMessage(sendMsg.data(), sendMsg.size()) < 0)
             if (d_tcpServer->sendMessage(sendMsg.m_data, sendMsg.m_size) < 0)
             {
@@ -154,13 +154,13 @@ void TcpServerStream::start()
 
 bool TcpServerStream::sendMessage(const std::string& msg)
 {
-    cout << "sendMessage()" << endl;
-    cout << "string: " << msg << endl;
+    //cout << "sendMessage()" << endl;
+    //cout << "string: " << msg << endl;
     //communicator::Message message(msg);
     communicator::Message message;
     message.m_data = msg.data();
     message.m_size = msg.size();
-    cout << "communicator::Message: " << message.m_data << endl;
+    //cout << "communicator::Message: " << message.m_data << endl;
     d_sendMsgQueue.push(message);
     return d_connectionOn.load();
 }

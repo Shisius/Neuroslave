@@ -43,8 +43,6 @@ volatile uint32_t i_sample = 0;
 McpSample mcp[n_samples + 100];
 std::atomic<bool> drdy;
 
-TcpServerStream * msg_srv;
-TcpServerStream * data_srv;
 std::atomic<bool> is_alive;
 std::atomic<bool> is_started;
 threadsafe_queue<McpSample> sample_queue;
@@ -64,32 +62,42 @@ void drdy_routine(void) {
 
 void recv_process()
 {
+	std::string answer = "EegSession:{\"tag\":\"hep\",\"sample_rate\":1600,\"n_channels\":4,\"gain\":1,\"tcp_decimation\":1}\n\r";
+	std::cout << "Recv thread\n";
 	std::string msg;
-	msg_srv = new TcpServerStream(7239);
+	TcpServerStream * msg_srv = new TcpServerStream(7239, 0, 100000);
 	msg_srv->start();
+	std::cout << "Recv started\n";
 	while (true) {
 		if (msg_srv->receiveMessage(msg)) {
+			std::cout << "Command: " << msg << std::endl;
 			if (msg.compare(0, 6, "TurnOn")) {
+				msg_srv->sendMessage(answer);
 				is_started.store(true, std::memory_order_relaxed);
 			} else if (msg.compare(0, 7, "TurnOff")) {
 				is_started.store(false, std::memory_order_relaxed);
 				break;
 			}
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
-	is_alive = false;
+	is_alive.store(false, std::memory_order_relaxed);
 	delete msg_srv;
+
+	std::cout << "Recv finished\n";
 }
 
 void send_process()
 {
+	std::cout << "Send thread\n";
 	std::string msg;
-	msg.resize(sizeof(TcpSample));
-	data_srv = new TcpServerStream(8239);
-	data_srv->start()
 	McpSample mcp_sample;
 	TcpSample tcp_sample;
+	msg.resize(sizeof(TcpSample));
+
+	TcpServerStream * data_srv = new TcpServerStream(8239, 0, 100000);
+	data_srv->start();
+	std::cout << "Send started\n";
 
 	while (is_alive.load(std::memory_order_relaxed)) {
 		if (is_started.load(std::memory_order_relaxed)) {
@@ -98,7 +106,7 @@ void send_process()
 			memcpy(msg.data(), &tcp_sample, sizeof(TcpSample));
 			data_srv->sendMessage(msg);
 		} else
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 	delete data_srv;
@@ -106,16 +114,19 @@ void send_process()
 
 void spi_process()
 {
+	std::cout << "SPI thread\n";
 	bool isr_mode = false;
 	uint32_t counter555 = 0;
 	uint8_t cmd = 2;
 	McpSample mcp_sample;
 	drdy.store(false, std::memory_order_relaxed);
 	std::cout << "SPI_Setup: " <<  wiringPiSPISetup (0, 10000000) << std::endl;
-	std::cout << "ISR setup: " << wiringPiISR (6, INT_EDGE_RISING,  drdy_routine) << std::endl;
+	if (isr_mode)
+		std::cout << "ISR setup: " << wiringPiISR (6, INT_EDGE_RISING,  drdy_routine) << std::endl;
 
+	std::cout << "SPI started\n";
 	i_sample = 0;
-	while (!(is_alive.load(std::memory_order_relaxed))) {
+	while (is_alive.load(std::memory_order_relaxed)) {
 		if (is_started.load(std::memory_order_relaxed)) {
 			if (isr_mode && i_sample != 0) {
 				while (!(drdy.load(std::memory_order_relaxed))) {usleep(50);}
@@ -144,17 +155,23 @@ void spi_process()
 int main(int argc, char** argv)
 {
 
-	is_alive.store(true, std::memory_order_relaxed);;
+	is_alive.store(true, std::memory_order_relaxed);
 
-	wiringPiSetup();	
+	wiringPiSetup();
 
-	scoped_thread recv_thread(std::thread(recv_process));
-	scoped_thread send_thread(std::thread(send_process));
-	scoped_thread spi_thread(std::thread(spi_process));
+	std::cout << "Pi setupped\n";	
 
-	while(!(is_alive.load(std::memory_order_relaxed))) {
+	std::thread recv_thread(recv_process);
+	std::thread send_thread(send_process);
+	std::thread spi_thread(spi_process);
+
+	while(is_alive.load(std::memory_order_relaxed)) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
+
+	spi_thread.join();
+	send_thread.join();
+	recv_thread.join();
 
 	printf("Finished!\n");
 	

@@ -16,7 +16,7 @@ set(MAIN_FLAGS "-Ofast -Wall -pthread")
 set(ALL_CXX_FLAGS "${MAIN_FLAGS} ${PLATFORM_FLAGS}")
 
 # Includes
-set(COMMON_TOOLS_PATH "${TOOLS_PATH/common_tools}")
+set(COMMON_TOOLS_PATH "${TOOLS_PATH}/common_tools")
 set(COMMUNICATION_PATH "${TOOLS_PATH}/communication/clientTCP")
 list(APPEND COMMUNICATION_PATH "${TOOLS_PATH}/communication/serverTCP")
 list(APPEND COMMUNICATION_PATH "${TOOLS_PATH}/communication/communicator")
@@ -51,6 +51,6 @@ ENDFOREACH()
 add_executable(${PROJECT_NAME} ${SOURCE_LIST})
 
 # include & link
-#target_include_directories(${PROJECT_NAME} PRIVATE ${ALL_INCLUDE_PATH} ${ALL_LIBS_PATH})
+target_include_directories(${PROJECT_NAME} PRIVATE ${ALL_INCLUDE_PATH}) # ${ALL_LIBS_PATH})
 # target_link_directories(${PROJECT_NAME} PRIVATE ${ALL_LIBS_PATH})
 #target_link_libraries(${PROJECT_NAME} PRIVATE ${ALL_LIBS})
