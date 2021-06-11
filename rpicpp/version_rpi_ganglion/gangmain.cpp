@@ -62,7 +62,9 @@ void drdy_routine(void) {
 
 void recv_process()
 {
-	std::string answer = "EegSession:{\"tag\":\"hep\",\"sample_rate\":1600,\"n_channels\":4,\"gain\":1,\"tcp_decimation\":1}\n\r";
+	std::string answer_turnon = "EegSession:{\"tag\":\"hep\",\"sample_rate\":1600,\"n_channels\":4,\"gain\":1,\"tcp_decimation\":1}\n\r";
+	std::string answer_user = "Users:[\"Antony\"]\n\r";
+	std::string answer_user_choosen = "User:Antony\n\r";
 	std::cout << "Recv thread\n";
 	std::string msg;
 	TcpServerStream * msg_srv = new TcpServerStream(7239, 0, 100000);
@@ -72,11 +74,15 @@ void recv_process()
 		if (msg_srv->receiveMessage(msg)) {
 			std::cout << "Command: " << msg << std::endl;
 			if (msg.compare(0, 6, "TurnOn")) {
-				msg_srv->sendMessage(answer);
+				msg_srv->sendMessage(answer_turnon);
 				is_started.store(true, std::memory_order_relaxed);
 			} else if (msg.compare(0, 7, "TurnOff")) {
 				is_started.store(false, std::memory_order_relaxed);
 				break;
+			} else if (msg.compare(0, 5, "User\n")) {
+				msg_srv->sendMessage(answer_user);
+			} else if (msg.compare(0, 5, "User:")) {
+				msg_srv->sendMessage(answer_user_choosen);
 			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
