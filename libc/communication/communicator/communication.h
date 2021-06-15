@@ -1,7 +1,7 @@
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
-#include "common_tools.h"
+#include "radar_common.h"
 #include "tcpserverstream.h"
 #include "consolestream.h"
 

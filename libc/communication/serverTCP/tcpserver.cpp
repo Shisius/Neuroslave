@@ -19,9 +19,9 @@ TCPServer::TCPServer(const u_short port, long tv_sec, long tv_usec): PORT(port)
 }
 
 TCPServer::~TCPServer(){
-    std::cout << "start ~TCPServer()" << std::endl;
+    //std::cout << "start ~TCPServer()" << std::endl;
     stop();
-    std::cout << "end ~TCPServer()" << std::endl;
+    //std::cout << "end ~TCPServer()" << std::endl;
 }
 
 //bool TCPServer::setServerIp(const char * ip) {
@@ -104,13 +104,13 @@ bool TCPServer::createSocket(){
 		return false;
 	}
 
-    std::cout << "Socket created." << std::endl;
+    //std::cout << "Socket created." << std::endl;
     if(setsockopt(d_serverSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) == SOCKET_ERROR){ //SO_REUSEADDR socket option allows a socket to forcibly bind to a port in use by another socket.
         printError("setsockopt() SO_REUSEADDR failed with error");
 //#endif // _WIN32
         closeServerSocket();
     }
-    if(setsockopt(d_serverSocket, SOL_SOCKET, SO_RCVTIMEO, (char*)&d_tv, sizeof (d_tv)) == SOCKET_ERROR){ //SO_REUSEADDR socket option allows a socket to forcibly bind to a port in use by another socket.
+    if(setsockopt(d_serverSocket, SOL_SOCKET, SO_RCVTIMEO, (char*)&d_tv, sizeof (d_tv)) == SOCKET_ERROR){ //SO_REUSEADDR socket option specify the receiving timeouts until reporting an error.
         printError("setsockopt() SO_RCVTIMEO failed with error");
         closeServerSocket();
         return false;
@@ -126,7 +126,7 @@ bool TCPServer::bindSocket(){
         closeServerSocket();
 		return false;
 	}
-    std::cout << "Bind done" << std::endl;
+    //std::cout << "Bind done" << std::endl;
 	return true;
 }
 
@@ -180,7 +180,7 @@ bool TCPServer::acceptSocket(){
 //        return false;
 //    }
     d_info = clientInfo();
-    std::cout << "Server accepted with client." << clientInfo() << std::endl;
+    //std::cout << "Server accepted with client." << clientInfo() << std::endl;
 	return true;
 }
 
@@ -209,7 +209,7 @@ int TCPServer::receiveMessage(char * message, int messageSize, int flags){
     else{
         if(bytes_recv == 0){
             d_info = "Client disconected";
-            std::cout << "Client disconected" << std::endl;
+            //std::cout << "Client disconected" << std::endl;
 #ifdef _WIN32
     if (closesocket(d_clientSocket) == SOCKET_ERROR)
 #else
@@ -255,14 +255,14 @@ std::string TCPServer::clientInfo(/*const char * message*/){
 
 void TCPServer::printError(const std::string& error){
 #ifdef _WIN32
-        std::cout << error << ":" << WSAGetLastError() << std::endl;
+        //std::cout << error << ":" << WSAGetLastError() << std::endl;
 #else
-        perror(error.c_str());
+        //perror(error.c_str());
 #endif //_WIN32
 }
 
 void TCPServer::closeServerSocket(){
-    std::cout << "closeServerSocket()" << std::endl;
+    //std::cout << "closeServerSocket()" << std::endl;
 #ifdef _WIN32
     if (closesocket(d_serverSocket) == SOCKET_ERROR)
     {
@@ -313,7 +313,7 @@ bool TCPServer::start()
 
 void TCPServer::stop()
 {
-    std::cout << "stop" << std::endl;
+    //std::cout << "stop" << std::endl;
     //std::cout << "stop bcl: d_clientSocket=" << d_clientSocket << std::endl;
     //if(d_clientSocket != INVALID_SOCKET)
     //{

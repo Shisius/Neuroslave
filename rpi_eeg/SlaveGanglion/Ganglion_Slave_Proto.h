@@ -2,7 +2,7 @@
 #define _GANGLION_SLAVE_PROTO_H_
 #include "Definitions_Ganglion.h"
 
-#define NSV_N_CHANNELS 2
+#define NSV_N_CHANNELS 4
 
 struct McpSample
 {

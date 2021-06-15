@@ -9,14 +9,18 @@ class TcpServerStream: public Communicator
 {
     u_short d_port;
     TCPServer* d_tcpServer = nullptr;
+    //atomic flags for threads
     atomic<bool> d_isReading;
     atomic<bool> d_isSending;
     atomic<bool> d_isAccepting;
+
     std::mutex d_acceptedMutex;
     std::condition_variable d_acceptedCV;
     scoped_thread *tcpSession_thread = nullptr;
     scoped_thread *receive_thread = nullptr;
     scoped_thread *send_thread = nullptr;
+
+    std::chrono::microseconds d_timeout;
 
 public:
     /* Constructor prepares the server address
@@ -32,7 +36,7 @@ public:
      */
     void start();
     bool sendMessage(const std::string&);
-    bool sendMessage(const char*, int);
+    //bool sendMessage(const char*, int);
     bool receiveMessage(std::string&);
     void stop();
     std::string statusInfo();

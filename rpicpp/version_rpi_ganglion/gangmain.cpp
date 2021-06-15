@@ -9,6 +9,7 @@
 #include <string.h>
 #include <atomic>
 #include <thread>
+#include <algorithm>
 extern "C" {
 	#include <wiringPiSPI.h>
 	#include <wiringPi.h>
@@ -23,19 +24,72 @@ struct McpSample
 	uint32_t state = 0;
 };
 
-struct TcpSample
-{
-	uint32_t header = 0xACDC0400;
-	int32_t eeg_data[4];
+enum class NeuroslaveSampleState : uint8_t {
+    GOOD = 0,
+    INDEX_ERROR = 1
 };
 
-TcpSample mcp2tcp(McpSample & mcp_sample)
+struct TcpHeader{
+    uint32_t Label : 16;
+    uint32_t payload_length : 8;
+    uint32_t state : 8;
+};// __attribute__((__packed__));
+
+struct TcpSample
 {
-	TcpSample tcp_sample;
+	TcpHeader header;
+	int32_t eeg_data[4];
+
+	void to_char(char* msg) {
+		memcpy(msg, &(header), 2);
+		std::reverse(msg, msg+2);
+		memcpy(msg + 2, (char*)(&(header))+2, 2);
+		for (unsigned int i = 0; i < 4; i++) {
+			memcpy(msg + 4 + i*4, &(eeg_data[0]) + i, 4);
+			std::reverse(msg + 4 + i*4, msg + 4 + i*4 + 4);
+			//std::reverse(msg + 4 + i*4 + 2, msg + 4 + i*4 + 4);
+		}
+	}
+};// __attribute__((__packed__));
+
+// TcpSample mcp2tcp(McpSample & mcp_sample)
+// {
+// 	TcpSample tcp_sample;
+// 	tcp_sample.header = 0xACDC0400;
+// 	memcpy(tcp_sample.eeg_data, mcp_sample.eeg_data, 16);
+// 	if (mcp_sample.state == 30)
+// 		tcp_sample.header |= 1;
+// 	return tcp_sample;
+// }
+
+void mcp2tcp(McpSample & mcp_sample, TcpSample & tcp_sample)
+{
+	tcp_sample.header.Label = 0xACDC;
+	tcp_sample.header.payload_length = 4;
+	tcp_sample.header.state = 0;
+
+	//tcp_sample.eeg_data[0] = 0x00010000;
+	//tcp_sample.eeg_data[1] = 0x00010000;
+	//tcp_sample.eeg_data[2] = 0x00010000;
+	//tcp_sample.eeg_data[3] = 0x00010000;
 	memcpy(tcp_sample.eeg_data, mcp_sample.eeg_data, 16);
 	if (mcp_sample.state == 30)
-		tcp_sample.header |= 1;
-	return tcp_sample;
+		tcp_sample.header.state = 0x01;
+}
+
+void mcp2tcp(McpSample & mcp_sample, TcpSample * tcp_sample)
+{
+	tcp_sample->header.Label = 0xACDC;
+	tcp_sample->header.payload_length = 4;
+	tcp_sample->header.state = 0;
+
+	tcp_sample->eeg_data[0] = 0x00010000;
+	tcp_sample->eeg_data[1] = 0x00010000;
+	tcp_sample->eeg_data[2] = 0x00010000;
+	tcp_sample->eeg_data[3] = 0x00010000;
+	//memcpy(tcp_sample.eeg_data, mcp_sample.eeg_data, 16);
+	if (mcp_sample.state == 30)
+		tcp_sample->header.state = 0x01;
 }
 
 const uint32_t n_samples = 100000;
@@ -63,59 +117,94 @@ void drdy_routine(void) {
 void recv_process()
 {
 	std::string answer_turnon = "EegSession:{\"tag\":\"hep\",\"sample_rate\":1600,\"n_channels\":4,\"gain\":1,\"tcp_decimation\":1}\n\r";
+	std::cout << answer_turnon;
+	std::string answer_turnon_accepted = "TurnOn:Accepted\n\r";
 	std::string answer_user = "Users:[\"Antony\"]\n\r";
+	std::cout << answer_user;
 	std::string answer_user_choosen = "User:Antony\n\r";
+	std::string answer_user_accepted = "User:Accepted\n\r";
 	std::cout << "Recv thread\n";
-	std::string msg;
-	TcpServerStream * msg_srv = new TcpServerStream(7239, 0, 100000);
-	msg_srv->start();
+	std::string msg = "";
+	TcpServerStream msg_srv(7239, 0, 100);
+	msg_srv.start();
 	std::cout << "Recv started\n";
-	while (true) {
-		if (msg_srv->receiveMessage(msg)) {
+	while (is_alive.load(std::memory_order_relaxed)) {
+		if (msg_srv.receiveMessage(msg)) {
 			std::cout << "Command: " << msg << std::endl;
-			if (msg.compare(0, 6, "TurnOn")) {
-				msg_srv->sendMessage(answer_turnon);
+			if (msg.compare(0, 6, "TurnOn") == 0) {
+				//msg_srv->sendMessage(answer_turnon_accepted);
+				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				msg_srv.sendMessage(answer_turnon);
 				is_started.store(true, std::memory_order_relaxed);
-			} else if (msg.compare(0, 7, "TurnOff")) {
+			} else if (msg.compare(0, 6, "TurnOf") == 0) {
 				is_started.store(false, std::memory_order_relaxed);
 				break;
-			} else if (msg.compare(0, 5, "User\n")) {
-				msg_srv->sendMessage(answer_user);
-			} else if (msg.compare(0, 5, "User:")) {
-				msg_srv->sendMessage(answer_user_choosen);
+			} else if (msg.compare(0, 6, "User\n\r") == 0) {
+				//msg_srv->sendMessage(answer_user_accepted);
+				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				msg_srv.sendMessage(answer_user);
+			} else if (msg.compare(0, 5, "User:") == 0) {
+				msg_srv.sendMessage(answer_user_accepted);
 			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 	is_alive.store(false, std::memory_order_relaxed);
-	delete msg_srv;
+	msg_srv.stop();
 
 	std::cout << "Recv finished\n";
+}
+
+std::string tcp_sample2msg(TcpSample * tcp_sample) {
+	std::string msg;
+	msg.resize(sizeof(TcpSample));
+	msg.copy((char*)tcp_sample, sizeof(TcpSample));
+	//std::reverse(msg.begin(), msg.end());
+	return msg;
 }
 
 void send_process()
 {
 	std::cout << "Send thread\n";
 	std::string msg;
+	int s_per_msg = 100;
 	McpSample mcp_sample;
+	msg.resize(sizeof(TcpSample)*s_per_msg);
+	//TcpSample * tcp_sample = new TcpSample();
 	TcpSample tcp_sample;
-	msg.resize(sizeof(TcpSample));
+	char * tcp_chr = new char[20];
+	//char chr_msg[sizeof(TcpSample)];
+	//uint16_t text[10] = {0xdcac, 0x0004, 0xacdc, 0x0400, 0x0004, 0xdcac, 0x0400, 0xacdc, 0x1234, 0x0239};//{'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t'};
 
-	TcpServerStream * data_srv = new TcpServerStream(8239, 0, 100000);
-	data_srv->start();
+	TcpServerStream data_srv(8239, 0, 10);
+	data_srv.start();
 	std::cout << "Send started\n";
-
+	uint32_t i_tcp_pack = 1;
 	while (is_alive.load(std::memory_order_relaxed)) {
 		if (is_started.load(std::memory_order_relaxed)) {
 			sample_queue.wait_and_pop(mcp_sample);
-			tcp_sample = mcp2tcp(mcp_sample);
-			memcpy(msg.data(), &tcp_sample, sizeof(TcpSample));
-			data_srv->sendMessage(msg);
+			mcp2tcp(mcp_sample, tcp_sample);
+			//tcp_chr = (char*)&tcp_sample;
+			tcp_sample.to_char(tcp_chr);
+			
+			//msg.copy(tcp_chr, sizeof(TcpSample));
+			memcpy(msg.data() + (sizeof(TcpSample)) * ((i_tcp_pack - 1) % s_per_msg), tcp_chr, sizeof(TcpSample));
+			if (i_tcp_pack % s_per_msg == 0) {
+				//std::cout << tcp_sample.header.Label << " " << sizeof(TcpSample) << " " << std::to_string(static_cast<int>(msg[0] << 8) + (static_cast<int>(msg[1]))) << "\n";
+				//std::cout << mcp_sample.eeg_data[0] << " " << std::to_string(static_cast<int>(tcp_chr[4])) << " " << std::to_string(static_cast<int>(msg[5])) << 
+				//	" " << std::to_string(static_cast<int>(msg[6])) << " " << std::to_string(static_cast<int>(msg[7])) << std::endl;
+				data_srv.sendMessage(msg);
+			}
+			//data_srv.sendMessage(tcp_sample2msg(tcp_sample));
+			//data_srv.sendMessage((char*)tcp_sample, 20);
+			i_tcp_pack++;
 		} else
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
-	delete data_srv;
+	data_srv.stop();
+
+	//delete tcp_sample;
 }
 
 void spi_process()
@@ -144,12 +233,16 @@ void spi_process()
 			memset((void*)&mcp_sample, 0, sizeof(McpSample));
 			wiringPiSPIDataRW (0, &cmd, sizeof(McpSample)) ;
 			wiringPiSPIDataRW (0, (unsigned char*)&mcp_sample, sizeof(McpSample)) ;	
-			i_sample++;
+			if (mcp_sample.state == 30) {
+				std::cout << "30!\n";
+			}
 			if (mcp_sample.state == 555) {
 				counter555++;
-				std::this_thread::sleep_for(std::chrono::microseconds(1000));
-			} else
+				std::this_thread::sleep_for(std::chrono::microseconds(500));
+			} else {
+				i_sample++;
 				sample_queue.push(mcp_sample);
+			}
 
 		} else
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -165,6 +258,7 @@ int main(int argc, char** argv)
 
 	wiringPiSetup();
 
+	//TcpSample tcpexample;
 	std::cout << "Pi setupped\n";	
 
 	std::thread recv_thread(recv_process);
