@@ -3,15 +3,19 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 #include "portaudio.h"
 
-#define WAVE_FILE_HEADER_LE "RIFF"
-#define WAVE_FILE_TYPE_HEADER "WAVE"
-#define WAVE_FILE_FMT_LABEL "fmt "
-#define WAVE_FILE_DATA_LABEL "data"
+extern const char WAVE_FILE_HEADER_LE[4];
+extern const char WAVE_FILE_TYPE_HEADER[4];
+extern const char WAVE_FILE_FMT_LABEL[4];
+extern const char WAVE_FILE_DATA_LABEL[4];
 //#define WAVE_FILE_FIELDS_SIZE 4
+
+#define PA_DEFAULT_FRAMES_PER_BUFFER (64)
 
 typedef enum {
 	WAVE_FORMAT_TYPE_PCM = 1
@@ -27,7 +31,9 @@ typedef struct {
 } WaveFileFormat;
 
 typedef struct {
-
+	PaStreamParameters stream_parameters;
+	PaStream * stream;
+	unsigned long frames_per_buffer;
 } PortAudioParameters;
 
 typedef struct WaveMusic WaveMusic;
@@ -38,10 +44,11 @@ struct WaveMusic {
 	WaveFileFormat music_format;
 	char * music_data;
 	uint32_t music_position; // In blocks
+	PortAudioParameters pa_parameters;
 	// methods
-	void (*play)(WaveMusic*);
-	void (*stop)(WaveMusic*);
-	void (*is_playing)(WaveMusic*);
+	bool (*play)(WaveMusic*);
+	bool (*stop)(WaveMusic*);
+	bool (*is_playing)(WaveMusic*);
 };
 
 /// Constructors
@@ -51,11 +58,16 @@ bool readFileWaveMusic(WaveMusic * wave_music, const char * file_name);
 bool setupAudioWaveMusic(WaveMusic * wave_music);
 
 /// Methods 
-void playWaveMusic(WaveMusic * wave_music);
-void stopWaveMusic(WaveMusic * wave_music);
+bool playWaveMusic(WaveMusic * wave_music);
+bool stopWaveMusic(WaveMusic * wave_music);
 bool is_playingWaveMusic(WaveMusic * wave_music);
 
 /// Destructors
 void closeWaveMusic(WaveMusic * wave_music);
+
+/// Portaudio functions
+static int paStreamCallback(const void *inputBuffer, void *outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, 
+					  PaStreamCallbackFlags statusFlags, void * userData );
+static void paFinishedCallback(void* userData);
 
 #endif //_WAVE_MUSIC_H_
