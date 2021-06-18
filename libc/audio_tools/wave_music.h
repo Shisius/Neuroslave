@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include "portaudio.h"
 
 #define WAVE_FILE_HEADER_LE "RIFF"
 #define WAVE_FILE_TYPE_HEADER "WAVE"
@@ -24,6 +25,10 @@ typedef struct {
 	uint16_t block_align; // bytes per sample * num_channels
 	uint16_t bits_per_sample;
 } WaveFileFormat;
+
+typedef struct {
+
+} PortAudioParameters;
 
 typedef struct WaveMusic WaveMusic;
 struct WaveMusic {
