@@ -6,18 +6,25 @@
 /**
  * EEG sample pack
  */
+typedef int eeg_sample_t; // 32 bit
 typedef enum {
-	NO_INFO = 0x0
+	EEG_SAMPLE_NO_INFO = 0,
+	EEG_SAMPLE_SKIPPED
+} EegSampleInfoType;
 
-} EEG_SAMPLE_INFO_TYPE;
-
-typedef struct EegSampleHeader EegSampleHeader
+typedef struct EegSampleHeader EegSampleHeader;
 struct EegSampleHeader {
-	uint16_t label;
-	uint16_t n_samples;
-	uint8_t n_channels;
-	uint8_t info_type;
-	uint16_t info;
+	unsigned short label;
+	unsigned short n_samples;
+	unsigned char n_channels;
+	unsigned char info_type;
+	unsigned short info;
+};
+
+typedef struct EegSamplePack EegSamplePack;
+struct EegSamplePack {
+	EegSampleHeader header;
+	eeg_sample_t * samples;
 };
 
 #endif //_NEUROSLAVE_DATA_H_
