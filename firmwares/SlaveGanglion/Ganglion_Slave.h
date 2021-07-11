@@ -5,7 +5,6 @@
 #include <SPIS.h>
 #include <SimbleeBLE.h>
 #include "Definitions_Ganglion.h"
-#include "Ganglion_Slave_Proto.h"
 #include "queue_mcu_rnr.h"
 
 #define SPIS_BUF_LEN sizeof(McpSample)
@@ -37,6 +36,8 @@ public:
 	    SAMPLE_RATE_400,
 	    SAMPLE_RATE_200
 	};
+
+  bool is_running;
 
 	// Construct
 	GanglionSlave();

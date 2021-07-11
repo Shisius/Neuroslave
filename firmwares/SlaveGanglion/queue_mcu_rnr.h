@@ -2,67 +2,60 @@
 #define _QUEUE_MCU_RNR_H_
 
 #include <atomic>
-#include "../../libc/ganglion_comm/definitions/ganglion_comm_defines.h"
+#include "/home/shisius/Projects/BCI/Neuroslave/libc/ganglion_comm/definitions/ganglion_comm_defines.h"
+#define _GLIBCXX_DEQUE_BUF_SIZE MCP_QUEUE_DEPTH * sizeof(McpSample)
+#include <queue>
+
 
 class McpQueue
 {
 protected:
 
-	McpSample storage[MCP_QUEUE_DEPTH];
-
-	volatile uint16_t pop_pos;
-	volatile uint16_t push_pos;
+	std::queue<McpSample> d_queue;
 	volatile std::atomic<bool> d_lock;
-	uint32_t current_index;
 
 public:
 
 	McpQueue() {
-		pop_pos = 0;
-		push_pos = 0;
 		d_lock.store(false, std::memory_order_relaxed);
-		current_index = 0;
 	}
 
 	~McpQueue() {
-		delete [] storage;
+		
+	}
+
+	void reset() {
+    std::queue<McpSample> new_queue;
+		d_lock.store(false, std::memory_order_relaxed);
+		d_queue.swap(new_queue);
+	}
+
+  size_t size() {
+    return d_queue.size();
+  }
+
+	bool overflow() {
+		return d_queue.size() >= MCP_QUEUE_DEPTH;
+	}
+
+	bool empty() {
+		return d_queue.empty();
 	}
 
 	void push(McpSample & sample) {
+		//if (overflow()) return false;
     	d_lock.store(true, std::memory_order_seq_cst);
-		memcpy(storage + push_pos, &sample, sizeof(McpSample));
-		push_pos++;
-    	if (push_pos == MCP_QUEUE_DEPTH) push_pos = 0;
+    	if (!overflow())
+    		d_queue.push(sample);	
 		d_lock.store(false, std::memory_order_seq_cst);	
-	}
-
-	void pop_first(McpSample * sample) {
-		d_lock.store(true, std::memory_order_seq_cst);
-		storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::GOOD);
-		memcpy(sample, storage + pop_pos, sizeof(McpSample));
-		current_index = storage[pop_pos].sample_index;
-		pop_pos++;
-    	if (pop_pos == MCP_QUEUE_DEPTH) pop_pos = 0;
-		d_lock.store(false, std::memory_order_seq_cst);
+		//return true;
 	}
 
 	void pop(McpSample * sample) {
 		d_lock.store(true, std::memory_order_seq_cst);
-		if (storage[pop_pos].sample_index == current_index + 1) {
-			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::GOOD);
-			memcpy(sample, storage + pop_pos, sizeof(McpSample));
-			current_index++;
-			pop_pos++;
-      		if (pop_pos == MCP_QUEUE_DEPTH) pop_pos = 0;
-		} else if (storage[pop_pos].sample_index < current_index + 1) {
-			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::OLD);
-			memcpy(sample, storage + pop_pos, sizeof(McpSample));
-		} else {
-			storage[pop_pos].state = static_cast<uint32_t>(McpSampleState::SKIPPED);
-			memcpy(sample, storage + pop_pos, sizeof(McpSample));
-			current_index = storage[pop_pos].sample_index;
-			pop_pos++;
-      		if (pop_pos == MCP_QUEUE_DEPTH) pop_pos = 0;
+		if (!d_queue.empty()) {
+			memcpy(sample, &d_queue.front(), sizeof(McpSample));
+			d_queue.pop();
 		}
 		d_lock.store(false, std::memory_order_seq_cst);
 	}

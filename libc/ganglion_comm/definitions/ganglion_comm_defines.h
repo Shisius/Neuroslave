@@ -14,8 +14,8 @@
 #define GANGLION_ANS_WAIT 0x1
 /// Data defines
 #define GANGLION_N_ELECTRODES 2
-#define MCP_QUEUE_DEPTH 256 
-#define MCP_SAMPLE_BAD 0x7BADBAD7
+#define MCP_QUEUE_DEPTH 512
+
 /// Data types
 typedef struct {
 	uint32_t sample_index;

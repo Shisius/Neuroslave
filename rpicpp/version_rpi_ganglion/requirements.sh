@@ -10,3 +10,4 @@ git clone https://github.com/PortAudio/portaudio.git
 cd portaudio
 ./configure && make
 sudo make install
+# wiring pi

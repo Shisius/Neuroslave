@@ -1,7 +1,7 @@
 #include "Ganglion_Slave.h"
 
 GanglionSlave::GanglionSlave() {
-	;
+	is_running = false;
 }
 
 void GanglionSlave::init()
@@ -38,14 +38,24 @@ void GanglionSlave::spis_routine(int bytes_received, bool overflow)
 {
 	if (bytes_received > 0) {
 		switch (spis_rx[0]) {
-			case SPIS_ANSWER:
+			case GANGLION_CMD_FETCH:
 				digitalWrite(SPIS_DATA_READY, 0);
+				if (mcp_sample_queue.empty()) {
+					*spis_tx = GANGLION_ANS_WAIT;
+				}
 				return;
-			case SPIS_START:
-				mcp_sample_queue.pop_first((McpSample*)spis_tx);
+			case GANGLION_CMD_START:
+				mcp_sample_counter = 0;
+				*spis_tx = GANGLION_ANS_WAIT;
+				mcp_sample_queue.reset();
+				is_running = true;
 				break;
-			case SPIS_MCP_SAMPLE:
-				mcp_sample_queue.pop((McpSample*)spis_tx);
+			case GANGLION_CMD_SAMPLE:
+				if (is_running && *spis_tx == GANGLION_ANS_READY)
+					mcp_sample_queue.pop((McpSample*)spis_tx);
+				break;
+			case GANGLION_CMD_STOP:
+				is_running = false;
 				break;
 		}
 		//digitalWrite(SPIS_DATA_READY, 1);
@@ -107,14 +117,17 @@ void GanglionSlave::mcp_process_data()
 	// Read sample from MCP3912
 	digitalWrite(MCP_SS, LOW);
 	mcp_send_cmd(CHAN_0, MCP_READ);
-	for (uint8_t i = 0; i < NSV_N_CHANNELS; i++) {
+	for (uint8_t i = 0; i < GANGLION_N_ELECTRODES; i++) {
     	new_sample.eeg_data[i] = conv24to32(mcp_read_register());
 	}
 	digitalWrite(MCP_SS, HIGH);
 	new_sample.sample_index = mcp_sample_counter;
 
 	// Store sample in buffer
-	mcp_sample_queue.push(new_sample);
+	if (is_running) {
+		mcp_sample_queue.push(new_sample);
+		*spis_tx = GANGLION_ANS_READY;
+	}
 	// Data ready
 	digitalWrite(SPIS_DATA_READY, 1);
 }

@@ -33,6 +33,7 @@ void SPIS_onReceive(int bytes_received, bool overflow)
 void MCP_ISR() { 
 
 	ganglion.mcp_data_ready = true;
-	ganglion.mcp_sample_counter++;
+	if (ganglion.is_running)
+		ganglion.mcp_sample_counter++;
   
 }
