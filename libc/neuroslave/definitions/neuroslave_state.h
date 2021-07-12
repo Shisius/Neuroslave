@@ -1,0 +1,6 @@
+#ifndef _NEUROSLAVE_STATE_H_
+#define _NEUROSLAVE_STATE_H_
+
+
+
+#endif //_NEUROSLAVE_STATE_H_
