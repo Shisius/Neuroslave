@@ -14,9 +14,9 @@
 
 bool ganglion_spi_comm_setup(void);
 
-bool ganglion_spi_start(void);
+void ganglion_spi_start(void);
 
-bool ganglion_spi_stop(void);
+void ganglion_spi_stop(void);
 
 bool ganglion_spi_get_sample(McpSample * mcp_sample);
 
