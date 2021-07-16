@@ -5,6 +5,7 @@ extern "C" {
 	#include "ganglion_spi_comm.h"
 	#include "neuroslave_state.h"
 }
+#include "neuroslave_struct.h"
 #include <atomic>
 
 class GanglionComm {
@@ -13,6 +14,7 @@ protected:
 
 	/// Communication
 	std::atomic<nsv_state_t> * state;
+	NeuroslaveSession * session;
 
 	/// Settings
 	uint16_t spi_wait_us;
