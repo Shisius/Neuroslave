@@ -6,7 +6,7 @@ extern "C" {
 	#include "neuroslave_state.h"
 }
 #include "neuroslave_struct.h"
-#include "common_tools.h"
+#include "threadsafe_queue.h"
 #include <atomic>
 #include <thread>
 #include <chrono>

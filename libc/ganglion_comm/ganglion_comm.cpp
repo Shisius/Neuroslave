@@ -54,6 +54,8 @@ void GanglionComm::finish()
 	ganglion_spi_stop();
 	free(cur_pack.samples);
 	d_state->store(nsv_set_state(d_state->load(std::memory_order_relaxed), NSV_STATE_SOURCE_READY_SESSION, false), std::memory_order_relaxed);
+	// Turn off session
+	d_state->store(nsv_set_state(d_state->load(std::memory_order_relaxed), NSV_STATE_SESSION, false), std::memory_order_relaxed);
 }
 
 void GanglionComm::get_eeg_pack()
@@ -73,8 +75,9 @@ void GanglionComm::get_eeg_pack()
 			i_mcp_sample++;
 		} else {
 		// Get sample
-
-		}
-		
+			if (!ganglion_spi_get_sample(&cur_mcp_sample)) {
+				std::this_thread::sleep_for(std::chrono::microseconds(d_spi_wait_us));
+			}
+		}	
 	}
 }

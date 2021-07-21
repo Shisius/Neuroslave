@@ -78,7 +78,7 @@ struct NeuroslaveGame {
 	bool user_wins;
 };
 
-struct EegRecord {
+struct NeuroslaveRecord {
 	NeuroslaveSession session;
 	NeuroslaveMusic music;
 	NeuroslaveGame game;
