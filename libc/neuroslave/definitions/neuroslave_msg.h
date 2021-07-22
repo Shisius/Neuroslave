@@ -51,6 +51,7 @@ namespace neuroslave
 		ACCEPTED = 0,
 		DENIED,
 		FINISHED,
+		SESSION,
 		PLAYLIST,
 		USERS
 	};
@@ -59,17 +60,18 @@ namespace neuroslave
 		{"Accepted", UserAnswer::ACCEPTED},
 		{"Denied", UserAnswer::DENIED},
 		{"Finished", UserAnswer::FINISHED},
+		{"Session", UserAnswer::SESSION},
 		{"Playlist", UserAnswer::PLAYLIST},
 		{"Users", UserAnswer::USERS}
 	};
 
 	/// Finctions
 	template <class EnumType>
-	std::string get_str_by_enum(std::map<std::string, EnumType> & strmap, EnumType value)
+	std::string get_str_by_enum(const std::map<std::string, EnumType> & strmap, EnumType value)
 	{
 		for (auto & p : strmap) {
 			if (p.second == value) {
-				return p.fisrt;
+				return p.first;
 			}
 		}
 		return "";

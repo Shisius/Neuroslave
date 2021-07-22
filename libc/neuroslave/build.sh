@@ -1,0 +1,2 @@
+#!/bin/bash
+g++ nsvtest.cpp neuroslave_ctl.cpp ../communication/serverTCP/tcpserver.cpp -I../third_party/rapidjson -Idefinitions -I../common_tools -I../communication/serverTCP -Wall -pthread -o nsvtest
