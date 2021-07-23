@@ -81,10 +81,10 @@ bool NeuroslaveController::msg_handler(std::vector<std::string> & msgvec)
 	return result;
 }
 
-bool NeuroslaveController::answer(neuroslave::UserAnswer ans)
+bool NeuroslaveController::answer()
 {
-	std::vector<std::string> ansvec({type, value});
-	std::string msg = neuroslave::strvec2msg(ansvec);
+	std::string msg = neuroslave::strvec2msg(d_answer);
+	d_answer.clear();
 	if (d_msg_server->sendMessage(msg.c_str(), msg.size()) != SOCKET_ERROR)
 		return true;
 	return false;

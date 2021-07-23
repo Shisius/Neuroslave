@@ -28,6 +28,7 @@ protected:
 
 	/// Internal
 	std::thread d_msg_thread;
+	std::vector<std::string> d_answer;
 
 	/// Workers
 
