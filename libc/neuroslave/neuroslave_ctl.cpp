@@ -43,6 +43,8 @@ void NeuroslaveController::msg_process()
 				if (bytes_received > 0) {
 					msg.resize(bytes_received);
 					cmd_vec = neuroslave::msg2strvec(msg);
+					if (!msg_handler(cmd_vec))
+						printf("MsgSrv ");
 				// Receive Error
 				} else if (bytes_received == 0) {
 					printf("MsgSrv connection closed\n");

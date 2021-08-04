@@ -20,18 +20,4 @@ void ganglion_spi_stop(void);
 
 bool ganglion_spi_get_sample(McpSample * mcp_sample);
 
-// bool ganglion_spi_get_sample_pack(EegSamplePack * eeg_sample_pack)
-// {
-// 	uint8_t sample_counter = 0;
-// 	McpSample mcp_sample;
-// 	while (sample_counter < eeg_sample_pack->header.n_samples) {
-// 		if (ganglion_spi_get_sample(&mcp_sample)) {
-
-// 		}
-// 	}
-// }
-
-
-
-
 #endif //_GANGLION_SPI_COMM_
