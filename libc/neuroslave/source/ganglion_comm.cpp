@@ -2,7 +2,9 @@
 
 bool GanglionComm::start()
 {
+	#ifndef NSV_DUMMY_SOURCE
 	if (!ganglion_spi_comm_setup()) return false;
+	#endif
 	spi_thread = std::thread(&GanglionComm::spi_process, this);
 	return true;
 }
@@ -28,7 +30,7 @@ void GanglionComm::spi_process()
 			/// SESSION
 			while (nsv_state_session_enabled(d_state->load(std::memory_order_relaxed))) {
 				get_eeg_pack();
-				sample_queue.push(cur_pack);
+				d_eeg_sample_queue->push(cur_pack);
 			}
 			/// STOP SESSION
 			finish();
@@ -39,7 +41,9 @@ void GanglionComm::spi_process()
 
 void GanglionComm::prepare()
 {
+	#ifndef NSV_DUMMY_SOURCE
 	ganglion_spi_start();
+	#endif
 	cur_sample_index = 0;
 	cur_mcp_sample.sample_index = 0;
 	cur_pack.header.label = EEG_SAMPLE_LABEL;
@@ -51,7 +55,9 @@ void GanglionComm::prepare()
 
 void GanglionComm::finish() 
 {
+	#ifndef NSV_DUMMY_SOURCE
 	ganglion_spi_stop();
+	#endif
 	free(cur_pack.samples);
 	d_state->store(nsv_set_state(d_state->load(std::memory_order_relaxed), NSV_STATE_SOURCE_READY_SESSION, false), std::memory_order_relaxed);
 	// Turn off session
@@ -65,7 +71,7 @@ void GanglionComm::get_eeg_pack()
 		// Set BAD
 		if (cur_mcp_sample.sample_index > cur_sample_index) {
 			for (unsigned int i = 0; i < cur_pack.header.n_channels; i++)
-				memcpy(cur_pack.samples + cur_pack.header.n_channels * i_mcp_sample + i, &eeg_sample_bad, sizeof(eeg_sample_t));
+				memcpy(cur_pack.samples + cur_pack.header.n_channels * i_mcp_sample + i, &d_eeg_sample_bad, sizeof(eeg_sample_t));
 			cur_sample_index++;
 			i_mcp_sample++;
 		} else if (cur_mcp_sample.sample_index == cur_sample_index) {
@@ -75,9 +81,17 @@ void GanglionComm::get_eeg_pack()
 			i_mcp_sample++;
 		} else {
 		// Get sample
+			#ifndef NSV_DUMMY_SOURCE
 			if (!ganglion_spi_get_sample(&cur_mcp_sample)) {
 				std::this_thread::sleep_for(std::chrono::microseconds(d_spi_wait_us));
 			}
+			#else
+			cur_mcp_sample.sample_index++;
+			for (int i = 0; i < GANGLION_N_ELECTRODES; i++)
+				cur_mcp_sample.eeg_data[i] = 1000 * std::sin(2 * M_PI * 
+					std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / 10000);
+			std::this_thread::sleep_for(std::chrono::microseconds(500));
+			#endif
 		}	
 	}
 }

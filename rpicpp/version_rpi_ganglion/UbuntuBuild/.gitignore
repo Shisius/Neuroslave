@@ -1,0 +1,7 @@
+/tmp/
+/raw/
+*.out
+*.config
+*.bins
+upload.sh
+

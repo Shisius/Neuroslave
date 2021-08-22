@@ -1,3 +1,4 @@
+
 #include "neuroslave_ctl.h"
 
 int main()
@@ -32,6 +33,8 @@ int main()
 
 	NeuroslaveController nsvctl;
 	nsvctl.launch();
+	nsvctl.wait_die();
+	nsvctl.terminate();
 
 	return 0;
 }

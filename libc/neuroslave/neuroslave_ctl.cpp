@@ -6,6 +6,29 @@ NeuroslaveController::NeuroslaveController()
 	d_msg_server = new TCPServer(neuroslave::MSGPORT, 0, d_srv_wait_us);
 	// State
 	d_state.store(nsv_set_state(0, NSV_STATE_ALIVE, true), std::memory_order_relaxed);
+	// Workers
+	d_ganglion_comm = new GanglionComm(&d_state, &d_session, &d_eeg_sample_queue);
+	d_eeg_distributor = new EegDistributor(&d_state, &d_session, &d_music, &d_game, &d_eeg_sample_queue);
+}
+
+NeuroslaveController::~NeuroslaveController()
+{
+	terminate();
+	// Delete workers
+	if (d_ganglion_comm != nullptr) {
+		delete d_ganglion_comm;
+		d_ganglion_comm = nullptr;
+	}
+	if (d_eeg_distributor != nullptr) {
+		delete d_eeg_distributor;
+		d_eeg_distributor = nullptr;
+	}
+
+	// Delete Internals
+	if (d_msg_server != nullptr) {
+		delete d_msg_server;
+		d_msg_server = nullptr;
+	}
 }
 
 void NeuroslaveController::launch()
@@ -19,12 +42,30 @@ void NeuroslaveController::launch()
 	// Start threads
 	d_msg_thread = std::thread(&NeuroslaveController::msg_process, this);
 
+	// Start workers
+	d_eeg_distributor->start();
+	d_ganglion_comm->start();
+
 }
 
 void NeuroslaveController::terminate()
 {
 	d_state.store(nsv_set_state(d_state.load(std::memory_order_relaxed), NSV_STATE_ALIVE, false), std::memory_order_relaxed);
+
+	// Stop workers
+	d_eeg_distributor->stop();
+	d_ganglion_comm->stop();
 	
+	// Wait for msg thread
+	if (d_msg_thread.joinable())
+		d_msg_thread.join();
+}
+
+void NeuroslaveController::wait_die()
+{
+	while (nsv_get_state(d_state.load(std::memory_order_relaxed), NSV_STATE_ALIVE)) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(d_die_wait_ms));
+	}
 }
 
 void NeuroslaveController::msg_process()
@@ -43,8 +84,9 @@ void NeuroslaveController::msg_process()
 				if (bytes_received > 0) {
 					msg.resize(bytes_received);
 					cmd_vec = neuroslave::msg2strvec(msg);
-					if (!msg_handler(cmd_vec))
-						printf("MsgSrv ");
+					if (!msg_handler(cmd_vec)) {
+						printf("MsgSrv msg handler failed\n");
+					} 
 				// Receive Error
 				} else if (bytes_received == 0) {
 					printf("MsgSrv connection closed\n");
@@ -73,12 +115,21 @@ bool NeuroslaveController::msg_handler(std::vector<std::string> & msgvec)
 			case neuroslave::UserCommand::TURN_ON:
 				result = turnon();
 				break;
+			case neuroslave::UserCommand::TURN_OFF:
+				result = turnoff();
+				break;
 
 		}
 	}
+	// Answer on command
+	d_answer.push_back(msgvec[0]);
 	if (result) {
-		answer(msgvec[0], neuroslave::get_str_by_enum(neuroslave::UserAnswerStr, neuroslave::UserAnswer::ACCEPTED));
+		d_answer.push_back(neuroslave::get_str_by_enum(neuroslave::UserAnswerStr, neuroslave::UserAnswer::ACCEPTED));
+	} else {
+		d_answer.push_back(neuroslave::get_str_by_enum(neuroslave::UserAnswerStr, neuroslave::UserAnswer::DENIED));
 	}
+	answer();
+	// 
 	msgvec.clear();
 	return result;
 }
@@ -94,9 +145,15 @@ bool NeuroslaveController::answer()
 
 bool NeuroslaveController::turnon()
 {
-	if (!answer(neuroslave::UserAnswer::SESSION))
+	// Send session
+	d_answer.push_back(neuroslave::get_str_by_enum(neuroslave::UserAnswerStr, neuroslave::UserAnswer::SESSION));
+	d_answer.push_back(d_session.to_json());
+	if (!answer())
 		return false;
+	// Turn on
 	d_state.store(nsv_set_state(d_state.load(std::memory_order_relaxed), NSV_STATE_SESSION, true), std::memory_order_relaxed);
+	// Wait for other workers
+	// ???????????
 	return true;
 }
 

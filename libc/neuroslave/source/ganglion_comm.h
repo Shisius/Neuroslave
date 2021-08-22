@@ -1,8 +1,13 @@
 #ifndef __GANGLION_COMM_H_
 #define __GANGLION_COMM_H_
 
+#ifndef NSV_DUMMY_SOURCE
+	extern "C" {
+		#include "ganglion_spi_comm.h"
+	}
+#endif
 extern "C" {
-	#include "ganglion_spi_comm.h"
+	#include "ganglion_comm_defines.h"
 	#include "neuroslave_state.h"
 }
 #include "neuroslave_struct.h"
@@ -10,12 +15,15 @@ extern "C" {
 #include <atomic>
 #include <thread>
 #include <chrono>
+#define USE_MATH_DEFINES
+#include <cmath>
+#include <unistd.h>
 
 class GanglionComm {
 
 protected:
 
-	static eeg_sample_t eeg_sample_bad = EEG_SAMPLE_BAD;
+	eeg_sample_t d_eeg_sample_bad = EEG_SAMPLE_BAD;
 
 	/// Communication
 	std::atomic<nsv_state_t> * d_state;
@@ -34,7 +42,7 @@ protected:
 	EegSamplePack cur_pack;
 
 	void spi_process();
-	EegSamplePack get_eeg_pack();
+	void get_eeg_pack();
 	void prepare();
 	void finish();
 

@@ -3,6 +3,7 @@
 
 #define EEG_SAMPLE_LABEL 0xACDC
 #define EEG_SAMPLE_BAD 0x7BADBAD7
+const unsigned short EEG_DATA_TCP_PORT = 8239;
 /**
  * EEG sample pack
  */

@@ -6,7 +6,6 @@
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
 #include "definitions/ganglion_comm_defines.h"
-#include "neuroslave_data.h"
 
 #define GANGLION_SPI_DELAY_US_DEFAULT 100
 #define GANGLION_SPI_SPEED 10000000
