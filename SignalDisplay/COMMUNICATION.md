@@ -18,12 +18,14 @@ Command answer example: "Record:Finished\n\r"
 	```
 	struct EegSession {
 		std::string tag; // Session name
+		std::string user_name;
 		unsigned int sample_rate; // Sample rate in Hz
 		unsigned int n_channels; // Number of data channels. This value should be equal to number of plotted curves.
+		unsigned int n_samples_per_pack; // Nymber of samples in every binary pack
 		unsigned int gain; // Gain value for amplifier
 		unsigned int tcp_decimation; // Data decimation for tcp binary port
 	};
-	Example: "EegSession:{"tag":"hep","sample_rate":1000,"n_channels":4,"gain":1,"tcp_decimation":10}\n\r"
+	Example: "EegSession:{"tag":"hep","user_name":"Antony","sample_rate":1000,"n_channels":4,"n_samples_per_pack":10,"gain":1,"tcp_decimation":1}\n\r"
 	```
 2. Music playlist: list of strings. 
 	```
@@ -49,6 +51,7 @@ Command answer example: "Record:Finished\n\r"
 	};
 	Example: "ConnectionSettings:{"ssid":"hep","password":"chanin"}\n\r"
 	```
+See Neuroslave/libc/neuroslave/definitions/neuroslave_struct.h
 
 ### GUI to Neuroslave communication
 Neuroslave can receive text and json messages as commands.
@@ -119,29 +122,35 @@ Command types:
 	```
 13. Connect. String "Connect". Parameter: "ConnectionSettings". Value: JSON ConnectionSettings struct representation.
 
+See Neuroslave/libc/neuroslave/definitions/neuroslave_msg.h
+
 ## TCP Port for binary data
 This port is used for binary messages sending from Neuroslave to GUI
 Each message has the same structure:
 1. Header. Type: uint32_t. 
 	1.1. First 16 bit - Label = 0xACDC. 
-	1.2. Next 8 bit - payload_length in 32bits words, usually is equal to EegSession.n_channels. 
-	1.3. Next 8 bit - state.
+	1.2. Next 8 bit - number of channels, usually is equal to EegSession.n_channels. 
+	1.3. Next 8 bit - number of samples in the pack, usually is equal to EegSession.n_samples_per_pack. 
 	```
-	enum class NeuroslaveSampleState : uint8_t {
-		GOOD = 0,
-		INDEX_ERROR = 1
+	struct EegSampleHeader {
+		unsigned short label;
+		unsigned char n_channels;
+		unsigned char n_samples;
 	};
 	```
-2. Payload. Type: int32_t[payload_length]. Array of signed integers. This is the useful data. Contains one point per all plotted curves.
+2. Payload. Type: int32_t[n_channels * n_samples]. Array of signed integers. This is the useful data. Contains n_samples points for all plotted curves.
 
 Example:
 ```
-0xACDC0400 - Label:0xACDC, Payload length (number of channels): 0x04, State: 0x00 - NeuroslaveSampleState::GOOD
-0x00000001 - Value in channel_1 = 1
-0xFFFFFFFF - Value in channel_2 = -1
-0x007FFFFF - Value in channel_3 = 2^23 - 1 (Maximum value)
-0xFF800000 - Value in channel_4 = -2^23 (Minimum value)
+0xACDC0203 - Label:0xACDC, number of channels: 0x02, number of samples: 0x03
+0x00000001 - Sample_1 in channel_1 = 1
+0xFFFFFFFF - Sample_1 in channel_2 = -1
+0x007FFFFF - Sample_2 in channel_1 = 2^23 - 1 (Maximum value)
+0xFF800000 - Sample_2 in channel_2 = -2^23 (Minimum value)
+0x7BADBAD7 - Sample_3 in channel_1 - Bad sample - GUI should mark it as bad - it means that no data has been obtained (or data has been skipped) in this moment.
+0x7BADBAD7 - Sample_3 in channel_2 - Bad sample - GUI should mark it as bad - it means that no data has been obtained (or data has been skipped) in this moment.
 ```
+See Neuroslave/libc/neuroslave/definitions/neuroslave_data.h
 
 ## Some notes
 1. Signal buffer length = time_window * sample_rate/tcp_decimation, where time_window - signal length (in seconds) for watching.
