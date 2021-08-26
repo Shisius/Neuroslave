@@ -61,11 +61,11 @@ Command types:
 1. TurnOn. String "TurnOn". Parameters: None.
 	```
 	Example: "TurnOn\n\r"
-	Answer: "EegSession:{current session parameters here}\n\r"
+	Answer: "Session:{current session parameters here}\n\r"
 	```
 2. Set. String "Set". Parameter: "EegSession". Value: JSON EegSession struct representation.
 	```
-	Example: "Set:EegSession:{"tag":"hep","sample_rate":1000,"n_channels":4,"gain":1,"tcp_decimation":10}\n\r"
+	Example: "Set:Session:{"tag":"hep","sample_rate":1000,"n_channels":4,"gain":1,"tcp_decimation":10}\n\r"
 	Answer: "Set:Accepted\n\r"
 	```
 3. TurnOff. String "TurnOff". Parameters: None.
