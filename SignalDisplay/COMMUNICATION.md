@@ -7,7 +7,7 @@ Servers on Neuroslave - clients on GUI.
 This port is used for sending and receiving text and JSON messages.
 Each message ends with message ending = "\n\r"
 JSON message usually starts with structure name followed by delimiter = ':'.
-JSON message structure: "StructName:{json here}\n\r"
+JSON message structure: "AnswerType:{json here}\n\r"
 Text message starts with "Message:" or "Error:" for errors or "Warning:" for warnings
 Text message example: "Message:Have a nice day, User!\n\r"
 Command answer example: "Record:Finished\n\r"
@@ -16,7 +16,7 @@ Command answer example: "Record:Finished\n\r"
 1. EegSession
 	C++ Structure:
 	```
-	struct EegSession {
+	struct NeuroslaveSession {
 		std::string tag; // Session name
 		std::string user_name;
 		unsigned int sample_rate; // Sample rate in Hz
@@ -25,7 +25,7 @@ Command answer example: "Record:Finished\n\r"
 		unsigned int gain; // Gain value for amplifier
 		unsigned int tcp_decimation; // Data decimation for tcp binary port
 	};
-	Example: "EegSession:{"tag":"hep","user_name":"Antony","sample_rate":1000,"n_channels":4,"n_samples_per_pack":10,"gain":1,"tcp_decimation":1}\n\r"
+	Example: "Session:{"tag":"hep","user_name":"Antony","sample_rate":1000,"n_channels":4,"n_samples_per_pack":10,"gain":1,"tcp_decimation":1}\n\r"
 	```
 2. Music playlist: list of strings. 
 	```
