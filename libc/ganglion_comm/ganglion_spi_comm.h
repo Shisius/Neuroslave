@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <string.h>
+#include <stdbool.h>
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
 #include "definitions/ganglion_comm_defines.h"
