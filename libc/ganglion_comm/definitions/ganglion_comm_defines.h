@@ -16,7 +16,7 @@
 #define GANGLION_N_ELECTRODES 2
 #define MCP_QUEUE_DEPTH 512
 
-#include <cstdint>
+#include <stdint.h>
 /// Data types
 typedef struct {
 	uint32_t sample_index;
