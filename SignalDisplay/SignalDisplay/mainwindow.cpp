@@ -73,6 +73,7 @@ void MainWindow::createDocks()
 
 QToolBar* MainWindow::createToolBar()
 {
+    qDebug() << "createToolBar()";
     QToolBar* ptb = new QToolBar();
     QCommonStyle style;
     act_on_off     = ptb->addAction(QIcon(":/img/turnon.png"), d_cmdStrings_map.value(TurnOn), this, SLOT(slot_start()));
@@ -100,6 +101,7 @@ QToolBar* MainWindow::createToolBar()
 
 void MainWindow::sendCommand(const QString & cmd)
 {
+    qDebug() << "sendCommand()";
     //QString str_sendCmd;
     //str_sendCmd = tr("%1%2%3%4%5%6").arg(cmd).arg(message_delimiter).arg(parameter).arg(message_delimiter).arg(value).arg(message_ending);
     qDebug() << "cmd " << cmd;
@@ -114,6 +116,7 @@ void MainWindow::sendCommand(const QString & cmd)
 
 void MainWindow::slot_start()
 {
+    qDebug() << "slot_start()";
     if(d_sessionStarted){
         stop();
     } else {
@@ -123,6 +126,7 @@ void MainWindow::slot_start()
 
 void MainWindow::start()
 {
+    qDebug() << "start()";
     d_sessionStarted = true;
     //QCommonStyle style;
     act_on_off->setIcon(QIcon(":/img/turnoff.png"));
@@ -136,6 +140,7 @@ void MainWindow::start()
 
 void MainWindow::stop()
 {
+    qDebug() << "stop()";
     sendCommand(d_cmdStrings_map.value(TurnOff)+message_ending);
     d_sessionStarted = false;
     //QCommonStyle style;
@@ -147,15 +152,17 @@ void MainWindow::stop()
 
 void MainWindow::slot_EegSessionSet()
 {
+    qDebug() << "slot_EegSessionSet()";
     QString str_sendCmd;
 
-    QString str_EegSession = QString::fromStdString(radar::to_json(d_lastEegSession));
+    QString str_EegSession = QString::fromStdString(d_lastEegSession.to_json());
+
     sarStructSettingsDialog dialog_sarStructSettings(str_EegSession, "EegSession settings", this);
     if(dialog_sarStructSettings.exec())
     {
         QString eegSession_str = dialog_sarStructSettings.changedSarStructString();
-        EegSession eegSession;
-        if(radar::from_json(eegSession_str.toStdString(), eegSession))
+        NeuroslaveSession eegSession;
+        if(eegSession.from_json(eegSession_str.toStdString())/*radar::from_json(eegSession_str.toStdString(), eegSession)*/)
         {
             str_sendCmd = tr("%1%2%3%4").arg(d_cmdStrings_map.value(Set)).arg(message_delimiter).arg(eegSession_str).arg(message_ending);
             //qDebug() << "str_sendCmd " << str_sendCmd;
@@ -171,21 +178,48 @@ void MainWindow::slot_EegSessionSet()
 
 void MainWindow::slot_gameSet()
 {
+    qDebug() << "slot_gameSet()";
     QString str_sendCmd;
-    GameSettings gameSettings;
+    NeuroslaveGameSettings gameSettings;
 
-    QString str_gameSettings = QString::fromStdString(radar::to_json(gameSettings));
-    sarStructSettingsDialog dialog_sarStructSettings(str_gameSettings, "Game settings", this);
+    //QString str_gameSettings_empty = QString::fromStdString(radar::to_json(gameSettings));
+    QJsonObject gameSettings_empty_jo;
+    gameSettings_empty_jo["subfolder"] = QString::fromStdString(gameSettings.subfolder);
+    gameSettings_empty_jo["duration"] = gameSettings.duration;
+    gameSettings_empty_jo["volume"] = gameSettings.volume;
+    gameSettings_empty_jo["complexity"] = gameSettings.complexity;
+    QJsonDocument gameSettings_empty_jd(gameSettings_empty_jo);
+    QByteArray gameSettings_empty_ba = gameSettings_empty_jd.toJson(QJsonDocument::Compact);
+    QString str_gameSettings_empty(gameSettings_empty_ba);
+    sarStructSettingsDialog dialog_sarStructSettings(str_gameSettings_empty, "Game settings", this);
     if(dialog_sarStructSettings.exec())
     {
         QString gameSettings_str = dialog_sarStructSettings.changedSarStructString();
-        EegSession eegSession;
-        if(radar::from_json(gameSettings_str.toStdString(), gameSettings))
+        QJsonDocument gameSettings_jd = QJsonDocument::fromJson(gameSettings_str.toUtf8());
+        if(gameSettings_jd.isNull())
+            return;
+        if(gameSettings_jd.isObject())
         {
+//            QJsonObject gameSettings_jo = gameSettings_jd.object();
+//            if (gameSettings_jo.contains("subfolder") && gameSettings_jo["subfolder"].isString())
+//                    gameSettings.subfolder = gameSettings_jo["subfolder"].toString().toStdString();
+//            if (gameSettings_jo.contains("duration") && gameSettings_jo["duration"].isDouble())
+//                    gameSettings.duration = gameSettings_jo["duration"].toDouble();
+//            if (gameSettings_jo.contains("volume") && gameSettings_jo["volume"].isDouble())
+//                    gameSettings.volume = gameSettings_jo["volume"].toDouble();
+//            if (gameSettings_jo.contains("complexity") && gameSettings_jo["complexity"].isDouble())
+//                    gameSettings.complexity = gameSettings_jo["complexity"].toInt();
             str_sendCmd = tr("%1%2%3%4").arg(d_cmdStrings_map.value(Set)).arg(message_delimiter).arg(gameSettings_str).arg(message_ending);
-            //qDebug() << "str_sendCmd " << str_sendCmd;
+            qDebug() << "str_sendCmd " << str_sendCmd;
             sendCommand(str_sendCmd);
         }
+
+//        if(radar::from_json(gameSettings_str.toStdString(), gameSettings))
+//        {
+//            str_sendCmd = tr("%1%2%3%4").arg(d_cmdStrings_map.value(Set)).arg(message_delimiter).arg(gameSettings_str).arg(message_ending);
+//            //qDebug() << "str_sendCmd " << str_sendCmd;
+//            sendCommand(str_sendCmd);
+//        }
         else
         {
             QString error = "An error occured while settings.";
@@ -202,11 +236,13 @@ void MainWindow::slot_clearRadarMsgWindow()
 
 void MainWindow::slot_chooseMusic()
 {
+    qDebug() << "slot_chooseMusic()";
     sendCommand(d_cmdStrings_map.value(Choose)+message_ending);
 }
 
 void MainWindow::slot_record()
 {
+    qDebug() << "slot_record()";
     if(d_recordStarted)
     {
         //d_recordStarted = false;
@@ -222,6 +258,7 @@ void MainWindow::slot_record()
 
 void MainWindow::slot_game()
 {
+    qDebug() << "slot_game()";
     sendCommand(d_cmdStrings_map.value(Game)+message_ending);
     d_gameState = GameState::Started;
 }
@@ -263,6 +300,11 @@ void MainWindow::initConnection()
     connect(d_tcpSocket_signal, SIGNAL(connected()), SLOT(slot_tcpConnected_signal()));
     connect(d_tcpSocket_signal, SIGNAL(disconnected()), SLOT(slot_tcpDisconnected_signal()));
 }
+
+//void MainWindow::initSignalReceiving()
+//{
+
+//}
 
 void MainWindow::slot_connection()
 {
@@ -407,6 +449,7 @@ void MainWindow::slot_tcpDisconnected_signal()
 
 void MainWindow::tcpConnectedDisplay(tcpPort port, bool isConnected)
 {
+    qDebug()<<"tcpConnectedDisplay()";
     lbl_connection->hide();
     progbar_connecting_msg->hide();//hide it as common progbar_connecting
     lbl_port_msg->show();
@@ -512,12 +555,18 @@ void MainWindow::processMessage(const QString &msg)
     QString addedText = msg;
     //EegSession eegSession;
     //std::string eegSession_str = radar::get_type_name(eegSession);
-    QString eegSessionName_str = QString::fromStdString(radar::get_type_name(d_lastEegSession));
+    //QString eegSessionName_str = QString::fromStdString(radar::get_type_name(d_lastEegSession));
 
-    if(msg.startsWith(eegSessionName_str)){
+    if(msg.startsWith(SESSION)){
         //addedText = msg;
-        std::string msg_std_str = msg.toStdString();
-        if(radar::from_json(msg_std_str, d_lastEegSession))
+        QString jsonMsg = msg;
+        int ind_message_delimiter = jsonMsg.indexOf(message_delimiter);
+        jsonMsg.remove(0, ind_message_delimiter+1);
+        jsonMsg.remove(message_ending);
+        qDebug() << jsonMsg;
+        std::string msg_std_str = jsonMsg.toStdString();
+
+        if(d_lastEegSession.from_json(msg_std_str)/*radar::from_json(msg_std_str, d_lastEegSession)*/)
         {
             displaySignalSettings();
             start();
@@ -605,6 +654,7 @@ void MainWindow::processMessage(const QString &msg)
 
 QString MainWindow::chooseFromJsonArray(const QString & jsonArray_str, const QString &windowTitle)
 {
+    qDebug()<<"chooseFromJsonArray";
     QString jA_str = jsonArray_str;
     int ind_message_delimiter = jA_str.indexOf(message_delimiter);
     jA_str.remove(0, ind_message_delimiter+1);
@@ -647,58 +697,134 @@ void MainWindow::slot_readTCP_signal()
 
     while(bytesAvailable > 0)
     {
-        Header header;
-        //uint32_t header;
-        in >> header.Label;
-        qDebug() << "header.Label"<< header.Label;
-        bytesAvailable -= sizeof(header.Label);
-        if(header.Label != NeuroslaveLabel)
-            return;
-        in >> header.payload_length;
-        qDebug() << "header.payload_length"<< header.payload_length;
-        bytesAvailable -= sizeof(header.payload_length);
-        if(header.payload_length != d_lastEegSession.n_channels)
-            return;
-        uint8_t state;
-        in >> state;
-        header.state = static_cast<NeuroslaveSampleState>(state);
-        switch (header.state) {
-        case NeuroslaveSampleState::GOOD:
-            //FILL ME
-            break;
-        case NeuroslaveSampleState::INDEX_ERROR:
-            d_pte_NeuroslaveMsg->append(QString("<span style=\" color:#ff0000;\">%1</span>").arg("NeuroslaveSampleState = INDEX_ERROR"));
-            break;
-        default:
-            break;
-        }
-        bytesAvailable -= sizeof(header.state);
-        if(bytesAvailable < header.payload_length)
-            return;
-        //QVector<int32_t> points(header.payload_length);
-        for(uint8_t i = 0; i < header.payload_length; i++)
-        {
-            int32_t point;
-            in >> point;
-            d_points[i].push_back(static_cast<double>(point));
-            qDebug() << "point"<< point;
-            bytesAvailable -= sizeof(point);
-        }
-        if(d_points.at(0).size() == DECIMATION_KOEFF){
-            QVector<double> x(DECIMATION_KOEFF);
-            for(uint i = 0; i < DECIMATION_KOEFF; i++)
+        if(d_isPayloadReceived){
+            EegSampleHeader header;
+            //uint32_t header;
+            in >> header.label;
+            qDebug() << "header.Label"<< header.label;
+            bytesAvailable -= sizeof(header.label);
+            if(header.label != NeuroslaveLabel)
+                return;
+            in >> header.n_channels;
+            qDebug() << "header.n_channels"<< header.n_channels;
+            bytesAvailable -= sizeof(header.n_channels);
+            if(header.n_channels != d_lastEegSession.n_channels)
+                return;
+            in >> header.n_samples;
+            qDebug() << "header.n_samples"<< header.n_samples;
+            bytesAvailable -= sizeof(header.n_samples);
+            if(bytesAvailable < header.n_channels * header.n_samples){
+                qDebug() << "Only part of payload is availabale";
+                return;
+            }
+            d_averageDecimation = header.n_samples;
+            //d_displayDecimation = d_averageDecimation*DECIMATION;
+            QVector<QVector<int32_t>> temp_points(header.n_samples); //collect d_averageDecimation points for every channel
+            for(uint8_t j = 0; j < header.n_samples; j++)
             {
-                x[i] = iXSignal*DECIMATION_KOEFF + i;
+                temp_points[j].resize(header.n_channels);
+                for(uint8_t i = 0; i < header.n_channels; i++)
+                {
+                    int32_t point;
+                    in >> point;
+                    temp_points[j][i] = point;
+                    qDebug() << "point"<< point;
+                    bytesAvailable -= sizeof(point);
+                }
             }
-            addData(x, d_points);
-            d_points.clear();
-            d_points.resize(d_lastEegSession.n_channels);
+            
+            for(uint8_t i = 0; i < header.n_channels; i++){
+                double pointsSum = 0;
+                //bool badSamle = false;
+                uint pointCount = d_averageDecimation;
+                //d_points[i].reserve(DECIMATION);
+                //d_badSamples_xIndexes[i].reserve(d_averageDecimation);
+                
+                for(uint8_t j = 0; j < header.n_samples; j++) {
+                    if(temp_points[j][i] == BADSAMLE)
+                    {
+                        pointCount--;
+                        qDebug() << i << j << "BADSAMLE";
+                        continue;
+                    }
+                    pointsSum += static_cast<double>(temp_points[j][i]);
+                    qDebug() <<  i << j << "pointsSum" << pointsSum;
+                }
+                if(pointCount == 0)
+                {
+                    d_points[i].push_back(0);
+                    d_badSamples_xIndexes[i].push_back(iXSignal*DECIMATION + d_points[i].size()-1);
+                    qDebug() <<  i << "xIndex" << iXSignal*DECIMATION + d_points[i].size();
+                            
+                } else {
+                    //d_badSamples[i].push_back(false);
+                    d_points[i].push_back(pointsSum/pointCount);
+                }              
+                qDebug() <<  i << "d_points[i]" <<d_points[i].at(d_points[i].size()-1);
+            }
 
-            for (uint i = 0; i < d_lastEegSession.n_channels; i++) {
-                d_points[i].reserve(DECIMATION_KOEFF);
+            if(d_points.at(0).size() == static_cast<int>(DECIMATION)){
+                QVector<double> x(DECIMATION);
+                for(uint i = 0; i < DECIMATION; i++)
+                {
+                     x[i] = iXSignal*DECIMATION + i;
+
+                }
+                addData(x, d_points);
+                //setBadSamples();
+                d_points.clear();
+                d_points.resize(d_lastEegSession.n_channels);
+                d_badSamples_xIndexes.clear();
+                d_badSamples_xIndexes.resize(d_lastEegSession.n_channels);
+
+                for (uint i = 0; i < d_lastEegSession.n_channels; i++) {
+                    d_points[i].reserve(DECIMATION);
+                    d_badSamples_xIndexes[i].reserve(DECIMATION);
+                }
+                iXSignal++;
             }
-            iXSignal++;
         }
+
+//        uint8_t state;
+//        in >> state;
+//        header.state = static_cast<NeuroslaveSampleState>(state);
+//        switch (header.state) {
+//        case NeuroslaveSampleState::GOOD:
+//            //FILL ME
+//            break;
+//        case NeuroslaveSampleState::INDEX_ERROR:
+//            d_pte_NeuroslaveMsg->append(QString("<span style=\" color:#ff0000;\">%1</span>").arg("NeuroslaveSampleState = INDEX_ERROR"));
+//            break;
+//        default:
+//            break;
+//        }
+//        bytesAvailable -= sizeof(header.state);
+//        if(bytesAvailable < header.payload_length)
+//            return;
+        //QVector<int32_t> points(header.payload_length);
+//        for(uint8_t i = 0; i < header.payload_length; i++)
+//        {
+//            int32_t point;
+//            in >> point;
+//            d_points[i].push_back(static_cast<double>(point));
+//            qDebug() << "point"<< point;
+//            bytesAvailable -= sizeof(point);
+//        }
+//        if(d_points.at(0).size() == DISPLAY_DECIMATION){
+//            QVector<double> x(DISPLAY_DECIMATION);
+//            for(uint i = 0; i < DISPLAY_DECIMATION; i++)
+//            {
+//                x[i] = iXSignal*DISPLAY_DECIMATION + i;
+//            }
+//            addData(x, d_points);
+//            d_points.clear();
+//            d_points.resize(d_lastEegSession.n_channels);
+
+//            for (uint i = 0; i < d_lastEegSession.n_channels; i++) {
+//                d_points[i].reserve(DISPLAY_DECIMATION);
+//            }
+//            iXSignal++;
+//        }
     }
 }
 
@@ -730,12 +856,17 @@ void MainWindow::displaySignalSettings()
     d_signalPlot->plotLayout()->clear();
     d_graph.clear();
     d_graph.resize(d_lastEegSession.n_channels);
+    d_errorGraphs.clear();
+    d_errorGraphs.resize(d_lastEegSession.n_channels);
 
     d_points.clear();
     d_points.resize(d_lastEegSession.n_channels);
+    d_badSamples_xIndexes.clear();
+    d_badSamples_xIndexes.resize(d_lastEegSession.n_channels);
 
     for (uint i = 0; i < d_lastEegSession.n_channels; i++) {
-        d_points[i].reserve(DECIMATION_KOEFF);
+        d_points[i].reserve(DECIMATION);
+        d_badSamples_xIndexes[i].reserve(DECIMATION);
     }
     iXSignal = 0;
     //QList<QCPAxis*> allAxes;
@@ -744,11 +875,19 @@ void MainWindow::displaySignalSettings()
         QCPAxisRect* axisRect = new QCPAxisRect(d_signalPlot);
         d_signalPlot->plotLayout()->addElement(i,0,axisRect);
 
-        d_allAxes << axisRect->axes();
+        //d_allAxes << axisRect->axes();
+        d_xAxes << axisRect->axis( QCPAxis::atBottom);
         d_graph[i] = d_signalPlot->addGraph(axisRect->axis(QCPAxis::atBottom), axisRect->axis(QCPAxis::atLeft));
         if(d_graph[i] == nullptr)
             qDebug()<<"d_graph["<<i<<"] is nullptr";
-        d_graph[i]->setPen(QPen(Qt::red,2));
+        d_graph[i]->setPen(QPen(Qt::blue,2));
+
+        d_errorGraphs[i] = d_signalPlot->addGraph(axisRect->axis(QCPAxis::atBottom), axisRect->axis(QCPAxis::atLeft));
+        if(d_errorGraphs[i] == nullptr)
+            qDebug()<<"d_errorGraphs["<<i<<"] is nullptr";
+        d_errorGraphs[i]->setPen(QPen(Qt::red,2));
+        d_errorGraphs[i]->setLineStyle(QCPGraph::lsNone);
+        d_errorGraphs[i]->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
 //        for(int j = 0; j < 50; j++)
 //        {
 //            d_graph[i]->addData(j+i,j);
@@ -785,18 +924,41 @@ void MainWindow::displaySignalSettings()
 void MainWindow::addData(const QVector<double> &x, const QVector<QVector<double>> &addedPoints)
 {
     qDebug()<<"addData";
-    for (uint i = 0; i < d_lastEegSession.n_channels; i++) {        
-        d_graph[i]->addData(x,addedPoints.at(i));
-        //d_graph[i]->rescaleAxes();
-        qDebug()<<"addedPoints.at("<<i<<")" << addedPoints.at(i);
-        //qDebug()<<"iXSignal" << iXSignal;
+    for (uint i = 0; i < d_lastEegSession.n_channels; i++) {         
+//        if(d_badSamples[i].contains(true))
+//        {
+//            uint32_t badSamplesCount = d_badSamples[i].count(true);
+//            int last_indBad = 0;
+//            int cur_indBad = d_badSamples[i].indexOf(true);
+//            if()
+//            QVector
+//        } else {
+            d_graph[i]->addData(x,addedPoints.at(i));
+            QVector<double> badSamples_yIndexes(d_badSamples_xIndexes[i].size(),0);
+            d_errorGraphs[i]->addData(d_badSamples_xIndexes[i],badSamples_yIndexes);
+            //d_graph[i]->rescaleAxes();
+            qDebug()<<"addedPoints.at("<<i<<")" << addedPoints.at(i);
+            //qDebug()<<"iXSignal" << iXSignal;
+      //  }
     }
-    if((iXSignal+1)*DECIMATION_KOEFF > signalSize){
+    //signal moving
+    //setKeyRange
+
+
+    if((iXSignal+1)*DECIMATION > signalSize){
+//        for(uint i = 0; i < d_lastEegSession.n_channels; i++)
+//        {
+
+//            d_xAxes.at(i)->setRange((iXSignal+1)*DECIMATION - signalSize, (iXSignal+1)*DECIMATION);
+//        }
         for (uint i = 0; i < d_lastEegSession.n_channels; i++) {
             QSharedPointer<QCPGraphDataContainer> graphData = d_graph.at(i)->data();
-            graphData->removeBefore((iXSignal+1)*DECIMATION_KOEFF - signalSize);
+            graphData->removeBefore((iXSignal+1)*DECIMATION - signalSize);
             d_graph[i]->setData(graphData);
             //d_graph[i]->rescaleAxes();
+            QSharedPointer<QCPGraphDataContainer> errorGraphData = d_errorGraphs.at(i)->data();
+            errorGraphData->removeBefore((iXSignal+1)*DECIMATION - signalSize);
+            d_errorGraphs[i]->setData(errorGraphData);
         }
     }
     d_signalPlot->rescaleAxes();
@@ -813,6 +975,11 @@ void MainWindow::addData(const QVector<double> &x, const QVector<QVector<double>
     d_signalPlot->replot();
     //iXSignal++;
     qDebug()<<"addData_end";
+}
+
+void MainWindow::setBadSamples()
+{
+
 }
 
 void MainWindow::writeSettings()

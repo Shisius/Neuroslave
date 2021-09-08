@@ -4,8 +4,11 @@
 #include <QMainWindow>
 #include <QTcpSocket>
 #include "qcustomplot.h"
+
+#include "neuroslave_struct.h"
+#include "neuroslave_msg.h"
 #include "dialogconnectionsettings.h"
-#include "struct_tools.h"
+//#include "struct_tools.h"
 #include "sarstructsettings/sarstructsettingsdialog.h"
 
 using signalSample_t = int32_t;
@@ -18,41 +21,52 @@ const QString textWarning_beginning = "Warning";
 const QString msgPlaylist_beginning = "Playlist";
 const QString RECORD_FINISHED = "Finished";
 const QString ACCEPTED = "Accepted";
+const QString SESSION = "Session";
 const uint16_t NeuroslaveLabel = 0xACDC;
 const uint signalSize = 1000;
-const uint DECIMATION_KOEFF = 100;
+const int32_t BADSAMLE = 0x7BADBAD7;
+const uint DECIMATION = 100; //update graphs after receiving every DISPLAY_DECIMATION samples
+//const uint AVERAGE_DECIMATION = 10; //display one sample counted as average of AVERAGE_DECIMATION samples
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-    struct EegSession {
-        std::string tag; // Session name
-        unsigned int sample_rate; // Sample rate in Hz
-        unsigned int n_channels; // Number of data channels. This value should be equal to number of plotted curves.
-        unsigned int gain; // Gain value for amplifier
-        unsigned int tcp_decimation; // Data decimation for tcp binary port
-        XTOSTRUCT(O(tag, sample_rate, n_channels, gain, tcp_decimation))
-    };
+//    struct EegSession {
+//        std::string tag; // Session name
+//        unsigned int sample_rate; // Sample rate in Hz
+//        unsigned int n_channels; // Number of data channels. This value should be equal to number of plotted curves.
+//        unsigned int n_samples_per_pack; // Number of samples in every binary pack
+//        unsigned int gain; // Gain value for amplifier
+//        unsigned int tcp_decimation; // Data decimation for tcp binary port
+//        XTOSTRUCT(O(tag, sample_rate, n_channels, n_samples_per_pack, gain, tcp_decimation))
+//    };
+    
+      
 
-    struct GameSettings {
-        std::string subfolder; // Subfolder in playlist folder
-        float duration; // in seconds
-        float volume; // from 0 to 100%
-        uint8_t complexity; // from 2 to 6. Number of music files for choose
-        XTOSTRUCT(O(subfolder, duration, volume, complexity))
-    };
+//    struct GameSettings {
+//        std::string subfolder; // Subfolder in playlist folder
+//        float duration; // in seconds
+//        float volume; // from 0 to 100%
+//        uint8_t complexity; // from 2 to 6. Number of music files for choose
+//        XTOSTRUCT(O(subfolder, duration, volume, complexity))
+//    };
 
-    enum class NeuroslaveSampleState : uint8_t {
-        GOOD = 0,
-        INDEX_ERROR = 1
-    };
+    
+//    enum class NeuroslaveSampleState : uint8_t {
+//        GOOD = 0,
+//        INDEX_ERROR = 1
+//    };
 
-    struct Header{
-        uint16_t Label;
-        uint8_t payload_length;
-        NeuroslaveSampleState state;
+//    struct Header{
+//        uint16_t Label;
+//        uint8_t payload_length;
+//        NeuroslaveSampleState state;
+//    };
+    struct EegSampleHeader {
+        unsigned short label;
+        unsigned char n_channels;
+        unsigned char n_samples;
     };
-
 
 
 //    struct BinaryData {
@@ -127,17 +141,24 @@ private:
 
     //Graphs
     QCustomPlot *d_signalPlot;
-    QList<QCPAxis*> d_allAxes;
+    QList<QCPAxis*> d_xAxes;
     double iXSignal = 0; //position on X axis for adding signal
     QVector<QCPGraph*> d_graph;
+    QVector<QCPGraph*> d_errorGraphs;
     QVector<QVector<double>> d_points;
-
+    //QVector<QVector<bool>> d_badSamples;
+    QVector<QVector<double>> d_badSamples_xIndexes;
     QString d_textMessage;
 
-    EegSession d_lastEegSession;    
+    NeuroslaveSession d_lastEegSession;
 
     bool d_sessionStarted = false;
     bool d_recordStarted = false;
+
+    bool d_isPayloadReceived = true;
+    int32_t d_PayloadReceived_count = 0;
+    uint d_displayDecimation;
+    uint d_averageDecimation;
 
     enum Cmd
     {
@@ -175,6 +196,7 @@ private:
     QToolBar* createToolBar();
 
     void initConnection();
+    //void initSignalReceiving();
 
     void tcpConnect();
     void closeConnections();
@@ -184,6 +206,7 @@ private:
 
     void displaySignalSettings();
     void addData(const QVector<double> &x, const QVector<QVector<double>> &addedPoints);
+    void setBadSamples();
     void processMessage(const QString &msg);
     void sendCommand(const QString & cmd);
     void stop();
