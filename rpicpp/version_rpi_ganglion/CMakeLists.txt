@@ -36,7 +36,7 @@ list(APPEND ALL_INCLUDE_PATH ${NEUROSLAVE_TOOLS_PATH})
 list(APPEND ALL_INCLUDE_PATH ${RAPID_JSON_PATH})
 list(APPEND ALL_INCLUDE_PATH ${FILE_TOOLS_PATH})
 # Platform dependent includes
-#list(APPEND ALL_INCLUDE_PATH ${PLATFORM_PATH})
+list(APPEND ALL_INCLUDE_PATH ${PLATFORM_PATH})
 
 # standards & options
 add_compile_options(-Wno-error)
