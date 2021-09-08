@@ -1,6 +1,7 @@
 #ifndef _NEUROSLAVE_CTL_H_
 #define _NEUROSLAVE_CTL_H_
 
+#include <algorithm>
 #include "neuroslave_msg.h"
 #include "neuroslave_fs.h"
 #include "threadsafe_queue.h"
@@ -52,7 +53,8 @@ protected:
 	bool choose();
 	bool record();
 	bool stop();
-	bool user();
+	bool get_users();
+	bool set_user(std::string & choosen_user);
 	bool game();
 	bool set();
 	bool connect();

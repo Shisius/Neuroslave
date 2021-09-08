@@ -118,6 +118,12 @@ bool NeuroslaveController::msg_handler(std::vector<std::string> & msgvec)
 			case neuroslave::UserCommand::TURN_OFF:
 				result = turnoff();
 				break;
+			case neuroslave::UserCommand::USER:
+				if (msgvec.size() > 1) 
+					result = set_user(msgvec[1]);
+				else
+					result = get_users();
+				break;
 
 		}
 	}
@@ -161,4 +167,24 @@ bool NeuroslaveController::turnoff()
 {
 	d_state.store(nsv_set_state(d_state.load(std::memory_order_relaxed), NSV_STATE_SESSION, false), std::memory_order_relaxed);
 	return true;
+}
+
+bool NeuroslaveController::get_users()
+{
+	d_answer.push_back(neuroslave::get_str_by_enum(neuroslave::UserAnswerStr, neuroslave::UserAnswer::USERS));
+	d_answer.push_back(neuroslave::to_json(neuroslave_get_users()));
+	if (!answer())
+		return false;
+	return true;
+}
+
+bool NeuroslaveController::set_user(std::string & choosen_user)
+{
+	std::vector<std::string> users = neuroslave_get_users();
+	if (std::count(users.begin(), users.end(), choosen_user) > 0) {
+		d_session.user_name = choosen_user;
+		return true;
+	}
+	printf("Unknown user: %s\n", choosen_user.c_str());
+	return false;
 }
