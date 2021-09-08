@@ -36,7 +36,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 FORMS += \
     dialogconnectionsettings.ui
 
-INCLUDEPATH += ../
+INCLUDEPATH += ../ \
+               ../../libc/neuroslave/definitions/ \
+               ../../libc/third_party/rapidjson
 
 RESOURCES += \
     img.qrc
