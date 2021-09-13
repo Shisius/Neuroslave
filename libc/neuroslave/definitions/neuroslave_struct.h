@@ -18,40 +18,17 @@ struct NeuroslaveSession {
 
 	NeuroslaveSession() : tag(""), user_name(""), sample_rate(1600), n_channels(2), n_samples_per_pack(10), gain(1), tcp_decimation(1) {}
 
-	std::string to_json()
-	{
-		rapidjson::StringBuffer buf;
-		rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-		writer.StartObject();
-		writer.String("tag"); writer.String(tag.c_str(), tag.size());
-		writer.String("user_name"); writer.String(user_name.c_str(), user_name.size());
-		writer.String("sample_rate"); writer.Uint(sample_rate);
-		writer.String("n_channels"); writer.Uint(n_channels);
-		writer.String("n_samples_per_pack"); writer.Uint(n_samples_per_pack);
-		writer.String("gain"); writer.Uint(gain);
-		writer.String("tcp_decimation"); writer.Uint(tcp_decimation);
-		writer.EndObject();
-		return buf.GetString();
-	}
+	std::string to_json();
 
-	bool from_json(const std::string & json_str)
-	{
-		rapidjson::Document doc;		
-		doc.Parse(json_str.c_str());
-		if (!doc.IsObject()) return false;
-		if (doc.HasMember("tag")) tag = doc["tag"].GetString();
-		if (doc.HasMember("user_name")) user_name = doc["user_name"].GetString();
-		if (doc.HasMember("sample_rate")) sample_rate = doc["sample_rate"].GetInt();
-		if (doc.HasMember("n_channels")) n_channels = doc["n_channels"].GetInt();
-		if (doc.HasMember("n_samples_per_pack")) n_samples_per_pack = doc["n_samples_per_pack"].GetInt();
-		if (doc.HasMember("gain")) gain = doc["gain"].GetInt();
-		if (doc.HasMember("tcp_decimation")) tcp_decimation = doc["tcp_decimation"].GetInt();
-		return true;
-	}
+	bool from_json(const std::string & json_str);
+
 };
 
 struct NeuroslaveEegData {
 	std::vector<EegSamplePack> packs;
+
+	std::string to_json();
+
 };
 
 struct NeuroslaveMusic {
@@ -62,6 +39,8 @@ struct NeuroslaveMusic {
 	unsigned int duration_us;
 	unsigned int start_sample; // Number of start sample;
 	unsigned int end_sample;
+
+	std::string to_json();
 };
 
 struct NeuroslaveGameSettings {
@@ -69,6 +48,9 @@ struct NeuroslaveGameSettings {
 	float duration; // in seconds
 	float volume; // from 0 to 100%
 	uint8_t complexity; // from 2 to 6. Number of music files for choose
+
+	std::string to_json();
+
 };
 
 struct NeuroslaveGame {
@@ -76,6 +58,9 @@ struct NeuroslaveGame {
 	std::string right_music;
 	std::string guessed_music;
 	bool user_wins;
+
+	std::string to_json();
+
 };
 
 struct NeuroslaveRecord {
@@ -84,6 +69,8 @@ struct NeuroslaveRecord {
 	NeuroslaveGame game;
 	NeuroslaveEegData eeg;
 	unsigned long long start_time_ns;
+
+	std::string to_json();
 	
 };
 
