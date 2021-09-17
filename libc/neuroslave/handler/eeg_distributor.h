@@ -12,6 +12,7 @@ extern "C" {
 #include "streamlogger.h"
 #include <atomic>
 #include <thread>
+#include <errno.h>
 
 class EegDistributor
 {

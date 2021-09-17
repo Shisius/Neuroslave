@@ -8,6 +8,7 @@
 #include "ganglion_comm.h"
 #include "eeg_distributor.h"
 #include "tcpserver.h"
+#include "signal_tools.h"
 extern "C" {
 	#include "neuroslave_state.h"
 }
@@ -15,6 +16,7 @@ extern "C" {
 
 #include <thread>
 #include <atomic>
+#include <errno.h>
 
 class NeuroslaveController
 {

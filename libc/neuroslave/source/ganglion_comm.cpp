@@ -26,6 +26,9 @@ void GanglionComm::spi_process()
 			/// WAIT FOR SESSION
 			while (!nsv_state_session_enabled(d_state->load(std::memory_order_relaxed))) {
 				std::this_thread::sleep_for(std::chrono::microseconds(d_session_wait_us));
+				if (!nsv_get_state(d_state->load(std::memory_order_relaxed), NSV_STATE_ALIVE)) {
+					break;
+				}
 			}
 			/// SESSION
 			while (nsv_state_session_enabled(d_state->load(std::memory_order_relaxed))) {
@@ -81,17 +84,17 @@ void GanglionComm::get_eeg_pack()
 			i_mcp_sample++;
 		} else {
 		// Get sample
-			#ifndef NSV_DUMMY_SOURCE
+#ifndef NSV_DUMMY_SOURCE
 			if (!ganglion_spi_get_sample(&cur_mcp_sample)) {
 				std::this_thread::sleep_for(std::chrono::microseconds(d_spi_wait_us));
 			}
-			#else
+#else
 			cur_mcp_sample.sample_index++;
 			for (int i = 0; i < GANGLION_N_ELECTRODES; i++)
 				cur_mcp_sample.eeg_data[i] = 1000 * std::sin(2 * M_PI * 
 					std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / 10000);
 			std::this_thread::sleep_for(std::chrono::microseconds(500));
-			#endif
+#endif
 		}	
 	}
 }

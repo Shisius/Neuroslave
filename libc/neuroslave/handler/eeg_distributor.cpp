@@ -25,6 +25,12 @@ EegDistributor::~EegDistributor()
 
 bool EegDistributor::start()
 {
+	// Start server
+	if (!d_eeg_server->start()) {
+		printf("EEG server start failed!\n");
+		return false;
+	}
+	// Start thread
 	d_data_thread = std::thread(&EegDistributor::eeg_process, this);
 	return true;
 }
@@ -61,6 +67,9 @@ void EegDistributor::eeg_process()
 					/// WAIT FOR SESSION
 					while (!nsv_state_session_enabled(d_state->load(std::memory_order_relaxed))) {
 						std::this_thread::sleep_for(std::chrono::microseconds(d_session_wait_us));
+						if (!nsv_get_state(d_state->load(std::memory_order_relaxed), NSV_STATE_ALIVE)) {
+							break;
+						}
 					}
 					/// SESSION
 					while (nsv_state_session_enabled(d_state->load(std::memory_order_relaxed))) {
@@ -73,6 +82,8 @@ void EegDistributor::eeg_process()
 					/// STOP SESSION
 					finish_session();
 				}
+				if (!nsv_get_state(d_state->load(std::memory_order_relaxed), NSV_STATE_ALIVE))
+					break;
 				std::this_thread::sleep_for(std::chrono::microseconds(d_idle_wait_us));
 			}
 		} else {
@@ -85,10 +96,20 @@ void EegDistributor::eeg_process()
 
 bool EegDistributor::send_eeg_pack()
 {
-	char tmp_msg[sizeof(eeg_sample_t) * d_eeg_pack.header.n_samples * d_eeg_pack.header.n_channels + sizeof(d_eeg_pack.header)];
+	int bytes_sent = 0;
+	int msg_size = sizeof(eeg_sample_t) * d_eeg_pack.header.n_samples * d_eeg_pack.header.n_channels + sizeof(d_eeg_pack.header);
+	char tmp_msg[msg_size];
 	memcpy(tmp_msg, &d_eeg_pack.header, sizeof(EegSampleHeader));
 	memcpy(tmp_msg + sizeof(EegSampleHeader), &d_eeg_pack.samples, sizeof(eeg_sample_t) * d_eeg_pack.header.n_samples * d_eeg_pack.header.n_channels);
-	if (d_eeg_server->sendMessage(tmp_msg, sizeof(tmp_msg)) == SOCKET_ERROR)
-		return false;
-	return true;
+	while (bytes_sent < msg_size) {
+		bytes_sent += d_eeg_server->sendMessage(tmp_msg + bytes_sent, sizeof(tmp_msg) - bytes_sent);
+		if (bytes_sent == msg_size)
+			return true;
+		else if (bytes_sent == SOCKET_ERROR)
+			break;
+		else if (bytes_sent == 0)
+			break;
+	}
+	std::cout << "eeg send errno:" << errno << " bytes_sent = " << bytes_sent << "\n";
+	return false;
 }

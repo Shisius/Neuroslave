@@ -12,8 +12,13 @@ set(TOOLS_PATH "../../libc")
 include(${NSV_BUILD_FOLDER}/settings.cmake)
 
 # Flags
-set(MAIN_FLAGS "-Ofast -Wall -pthread")
-set(ALL_CXX_FLAGS "${MAIN_FLAGS} ${PLATFORM_FLAGS}")
+set(MAIN_CXX_FLAGS "-Ofast -Wall -pthread -lrt -lasound -lportaudio -lpthread")
+set(MAIN_C_FLAGS "-Ofast -Wall -pthread -lrt -lasound -lportaudio -lpthread")
+set(ALL_CXX_FLAGS "${MAIN_CXX_FLAGS} ${PLATFORM_FLAGS}")
+set(ALL_C_FLAGS "${MAIN_C_FLAGS} ${PLATFORM_FLAGS}")
+
+# Libs
+set(ALL_LIBS "portaudio")
 
 # Includes
 set(COMMON_TOOLS_PATH "${TOOLS_PATH}/common_tools")
@@ -25,8 +30,11 @@ set(NEUROSLAVE_TOOLS_PATH "${TOOLS_PATH}/neuroslave")
 list(APPEND NEUROSLAVE_TOOLS_PATH "${TOOLS_PATH}/neuroslave/definitions")
 list(APPEND NEUROSLAVE_TOOLS_PATH "${TOOLS_PATH}/neuroslave/source")
 list(APPEND NEUROSLAVE_TOOLS_PATH "${TOOLS_PATH}/neuroslave/handler")
+list(APPEND NEUROSLAVE_TOOLS_PATH "${TOOLS_PATH}/neuroslave/music")
 set(RAPID_JSON_PATH "${TOOLS_PATH}/third_party/rapidjson")
 set(FILE_TOOLS_PATH "${TOOLS_PATH}/file_tools")
+set(AUDIO_TOOLS_PATH "${TOOLS_PATH}/audio_tools")
+set(SYSTEM_TOOLS_PATH "${TOOLS_PATH}/system_tools")
 # Include it!
 set(ALL_INCLUDE_PATH "")
 list(APPEND ALL_INCLUDE_PATH ${COMMON_TOOLS_PATH})
@@ -35,6 +43,8 @@ list(APPEND ALL_INCLUDE_PATH ${GANGLION_COMM_PATH})
 list(APPEND ALL_INCLUDE_PATH ${NEUROSLAVE_TOOLS_PATH})
 list(APPEND ALL_INCLUDE_PATH ${RAPID_JSON_PATH})
 list(APPEND ALL_INCLUDE_PATH ${FILE_TOOLS_PATH})
+list(APPEND ALL_INCLUDE_PATH ${AUDIO_TOOLS_PATH})
+list(APPEND ALL_INCLUDE_PATH ${SYSTEM_TOOLS_PATH})
 # Platform dependent includes
 list(APPEND ALL_INCLUDE_PATH ${PLATFORM_PATH})
 
@@ -44,6 +54,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDED_CODE ON)
 SET(CMAKE_CXX_FLAGS "${ALL_CXX_FLAGS}")
+SET(CMAKE_C_FLAGS "${ALL_C_FLAGS}")
 
 # main cpp
 set(MAIN_SOURCE "nsvtest.cpp")
@@ -64,4 +75,4 @@ add_executable(${PROJECT_NAME} ${SOURCE_LIST})
 # include & link
 target_include_directories(${PROJECT_NAME} PRIVATE ${ALL_INCLUDE_PATH}) # ${ALL_LIBS_PATH})
 # target_link_directories(${PROJECT_NAME} PRIVATE ${ALL_LIBS_PATH})
-#target_link_libraries(${PROJECT_NAME} PRIVATE ${ALL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${ALL_LIBS})

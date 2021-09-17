@@ -3,6 +3,9 @@
 
 NeuroslaveController::NeuroslaveController()
 {
+	// SIGINT
+	attach_sigint(&NeuroslaveController::terminate, this);
+	// Server
 	d_msg_server = new TCPServer(neuroslave::MSGPORT, 0, d_srv_wait_us);
 	// State
 	d_state.store(nsv_set_state(0, NSV_STATE_ALIVE, true), std::memory_order_relaxed);
@@ -29,6 +32,8 @@ NeuroslaveController::~NeuroslaveController()
 		delete d_msg_server;
 		d_msg_server = nullptr;
 	}
+
+	printf("Nsv_ctl: deleted!\n");
 }
 
 void NeuroslaveController::launch()
@@ -50,7 +55,11 @@ void NeuroslaveController::launch()
 
 void NeuroslaveController::terminate()
 {
+	printf("Nsv_ctl: terminating... \n");
 	d_state.store(nsv_set_state(d_state.load(std::memory_order_relaxed), NSV_STATE_ALIVE, false), std::memory_order_relaxed);
+
+	// Stop server
+	d_msg_server->stop();
 
 	// Stop workers
 	d_eeg_distributor->stop();
@@ -82,19 +91,25 @@ void NeuroslaveController::msg_process()
 				msg.resize(d_msg_buf_size);
 				bytes_received = d_msg_server->receiveMessage(&msg[0], d_msg_buf_size);
 				if (bytes_received > 0) {
+					printf("Incoming: [%s]\n", msg.c_str());
 					msg.resize(bytes_received);
 					cmd_vec = neuroslave::msg2strvec(msg);
 					if (!msg_handler(cmd_vec)) {
 						printf("MsgSrv msg handler failed\n");
 					} 
 				// Receive Error
+				} else if(errno == EINTR || errno == EAGAIN) {
+                	continue;
 				} else if (bytes_received == 0) {
 					printf("MsgSrv connection closed\n");
 					break;
 				} else if (bytes_received == SOCKET_ERROR) {
+					std::cout << "recv errno:" << errno << "\n";
 					printf("MsgSrv socket error\n");
 					break;
 				}
+				if (!nsv_get_state(d_state.load(std::memory_order_relaxed), NSV_STATE_ALIVE))
+					break;
 			}
 		// Accept Error
 		} else {
@@ -146,6 +161,7 @@ bool NeuroslaveController::answer()
 	d_answer.clear();
 	if (d_msg_server->sendMessage(msg.c_str(), msg.size()) != SOCKET_ERROR)
 		return true;
+	std::cout << "send errno:" << errno << "\n";
 	return false;
 }
 

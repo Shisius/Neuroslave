@@ -20,13 +20,21 @@ namespace neuroslave
 		size_t pos = 0;
 		std::vector<std::string> strvec;
 		std::string sub;
-		while ((pos = msg.find(MSGDELIM)) != std::string::npos) {
+		size_t end_pos = msg.find(MSGEND);
+		if (end_pos > 0)
+			msg = msg.substr(0, end_pos);
+		while (true) {
+			pos = msg.find(MSGDELIM);
+			if (pos == std::string::npos) {
+				strvec.push_back(msg);
+				break;
+			}
 			sub = msg.substr(0, pos);
 			msg.erase(0, pos + sizeof(MSGDELIM));
-			if (sub.compare(MSGEND) == 0)
+			if (sub.size() <= 0)
 				break;
 			strvec.push_back(sub);	
-		}
+		} 
 		return strvec;
 	}
 

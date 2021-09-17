@@ -6,7 +6,7 @@
 
 namespace neuroslave
 {
-	const std::string MSGEND = "\r\n";
+	const std::string MSGEND = "\n\r";
 	const char MSGDELIM = ':';
 	const ushort MSGPORT = 7239;
 	/// GUI to Neuroslave
