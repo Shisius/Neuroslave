@@ -17,7 +17,8 @@ SOURCES += \
     sarstructsettings/sarsessionitem.cpp \
     sarstructsettings/sarstructsettingsModel.cpp \
     sarstructsettings/sarstructsettingsdialog.cpp \
-    stringlist_dialog.cpp
+    stringlist_dialog.cpp \
+    ../../libc/neuroslave/definitions/neuroslave_struct.cpp
 
 HEADERS += \
     dialogconnectionsettings.h \
