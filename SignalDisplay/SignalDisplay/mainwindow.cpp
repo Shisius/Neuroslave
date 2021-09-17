@@ -740,8 +740,8 @@ void MainWindow::slot_readTCP_signal()
                 {
                     int32_t point;
                     in >> point;
-                    if(isLittleEndian)
-                        point = qFromBigEndian(point);
+//                    if(isLittleEndian)
+//                        point = qFromBigEndian(point);
                     temp_points[j][i] = point;
                     qDebug() << "point"<< point;
                     bytesAvailable -= sizeof(point);
