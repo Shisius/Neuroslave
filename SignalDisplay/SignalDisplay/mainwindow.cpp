@@ -23,6 +23,9 @@ MainWindow::MainWindow(QWidget *parent)
     addToolBar(Qt::LeftToolBarArea, createToolBar());
     readSettings();
     initConnection();
+    qDebug() << qToLittleEndian(NeuroslaveLabel);
+    qDebug() << qToBigEndian(NeuroslaveLabel);
+    qDebug() << NeuroslaveLabel;
 
 
 //d_lastEegSession.n_channels = 4;
@@ -707,10 +710,10 @@ void MainWindow::slot_readTCP_signal()
 
             if(header.label != NeuroslaveLabel)
             {
-                if(header.label ==  qToLittleEndian(NeuroslaveLabel))
+                if(header.label == qToBigEndian(NeuroslaveLabel))
                 {
                     isLittleEndian = true;
-                    header.label = qFromLittleEndian(header.label);
+                    header.label = qFromBigEndian(header.label);
                 }
                 else
                     return;
@@ -738,7 +741,7 @@ void MainWindow::slot_readTCP_signal()
                     int32_t point;
                     in >> point;
                     if(isLittleEndian)
-                        point = qFromLittleEndian(point);
+                        point = qFromBigEndian(point);
                     temp_points[j][i] = point;
                     qDebug() << "point"<< point;
                     bytesAvailable -= sizeof(point);
