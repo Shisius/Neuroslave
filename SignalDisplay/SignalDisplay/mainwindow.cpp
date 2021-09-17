@@ -694,6 +694,7 @@ void MainWindow::slot_readTCP_signal()
     QDataStream in(d_tcpSocket_signal);
 
     int bytesAvailable = d_tcpSocket_signal->bytesAvailable();
+    bool isLittleEndian = false;
 
     while(bytesAvailable > 0)
     {
@@ -701,10 +702,19 @@ void MainWindow::slot_readTCP_signal()
             EegSampleHeader header;
             //uint32_t header;
             in >> header.label;
-            qDebug() << "header.Label"<< header.label;
+            qDebug() << "header.Label"<< header.label;            
             bytesAvailable -= sizeof(header.label);
+
             if(header.label != NeuroslaveLabel)
-                return;
+            {
+                if(header.label ==  qToLittleEndian(NeuroslaveLabel))
+                {
+                    isLittleEndian = true;
+                    header.label = qFromLittleEndian(header.label);
+                }
+                else
+                    return;
+            }
             in >> header.n_channels;
             qDebug() << "header.n_channels"<< header.n_channels;
             bytesAvailable -= sizeof(header.n_channels);
@@ -727,6 +737,8 @@ void MainWindow::slot_readTCP_signal()
                 {
                     int32_t point;
                     in >> point;
+                    if(isLittleEndian)
+                        point = qFromLittleEndian(point);
                     temp_points[j][i] = point;
                     qDebug() << "point"<< point;
                     bytesAvailable -= sizeof(point);
