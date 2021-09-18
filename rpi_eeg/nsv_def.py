@@ -1,10 +1,13 @@
 import copy
 import struct
+import itertools
 import multiprocessing as mp
 
 EEG_SESSION = {'tag': 'hep',
+               'user_name': 'Hep',
                'sample_rate': 1000,
-               'n_channels': 4,
+               'n_channels': 2,
+               'n_samples_per_pack': 10,
                'gain': 1,
                'tcp_decimation':1}
 
@@ -16,7 +19,7 @@ GAME_SETTINGS = {'subfolder': "",
 CONNECTION_SETTINGS = {'ssid': "",
                        'password': ""}
 
-EEG_SESSION_STR = b'EegSession'
+EEG_SESSION_STR = b'Session'
 GAME_SETTINGS_STR = b'GameSettings'
 EEG_SAMPLE_HEADER = 0xACDC
 
@@ -31,7 +34,9 @@ MCP_SAMPLE_SKIPPED = 30
 MCP_SAMPLE_RULE = 'I4iI'
 
 NSV_SAMPLE_INDEX_ERROR = 0x1
+NSV_BAD_SAMPLE = 0x7BADBAD7
 
+#BCI_PATH = 'BCI'
 PLAYLIST_PATH = 'playlist'
 USERS_PATH = 'users'
 
@@ -52,9 +57,10 @@ def EegSession():
 
 def EegSamplePack(sample_list):
     n_samples = len(sample_list)
-    header = (EEG_SAMPLE_HEADER << 16) | (n_samples << 8)
-    return struct.pack('!I' + str(n_samples) + 'i',
-                       *([header] + [int(i) for i in sample_list]))
+    n_channels = len(sample_list[0])
+    header = (EEG_SAMPLE_HEADER << 16) | (n_channels << 8) | n_samples
+    return struct.pack('!I' + str(n_samples * n_channels) + 'i',
+                       *([header] + [int(i) for i in itertools.chain.from_iterable(sample_list)]))
 
 def EegSampleFromMcpSample(mcp_sample):
 	header = (EEG_SAMPLE_HEADER << 16) | 0x0400

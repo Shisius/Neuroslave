@@ -21,6 +21,7 @@ def data_process(pipe_con, flag):
     dataSock.settimeout(SRV_TIMEOUT)
     dataSock.bind(('', SRV_DATA_PORT))
     dataSock.listen(1)
+    pipe_con.send("data process started!")
     while flag.value != NSV_STATE_TERM:
         try:
             clientSock, clientAddr = dataSock.accept()
@@ -28,17 +29,27 @@ def data_process(pipe_con, flag):
             counter = 0
             session = EegSession()
             while flag.value != NSV_STATE_TERM:
-                if pipe_con.poll():
-                    session = pipe_con.recv()
+                while (not pipe_con.poll()) and (flag.value != NSV_STATE_TERM):
+                    time.sleep(0.1)
+                    pipe_con.send("data session: poll error!")
+                session = pipe_con.recv()
+                pipe_con.send("data session started!")
                 while flag.value >= NSV_STATE_SESSION:
-                    data = [int(math.sin(counter * 2 * math.pi / session['sample_rate']) * 100 * session['gain'])] * session['n_channels']
+                    data = []
+                    for i_sample in range(session['n_samples_per_pack']):
+                        if counter % 5 == 0:
+                            data += [[NSV_BAD_SAMPLE] * session['n_channels']]
+                        else:
+                            data += [[int(math.sin(counter * 2 * math.pi / session['sample_rate']) * 100 * session['gain'])] * session['n_channels']]
+                        counter += 1
+                    if counter % 20 == 0:
+                        data = [[NSV_BAD_SAMPLE] * session['n_channels']] * session['n_samples_per_pack']
                     if ((counter % session['tcp_decimation']) == 0):
                         try:
                             clientSock.send(EegSamplePack(data))
                         except Exception as e:
                             pass
-                    counter += 1
-                    time.sleep(0.001)
+                    time.sleep(session['n_samples_per_pack'] / session['sample_rate']);
                 time.sleep(0.5)
             clientSock.close()
         except Exception as e:
@@ -68,7 +79,7 @@ class NeuroslaveImitator:
         self.data_pipe_ctl, self.data_pipe_src = MP_CTX.Pipe()
         self.choosen_music = ""
         self.user = self.get_users()[0]
-        self.access_point = pyaccesspoint.AccessPoint()
+        self.access_point = None #pyaccesspoint.AccessPoint()
 
         self.timer = None
 
@@ -159,6 +170,13 @@ class NeuroslaveImitator:
     def session_start(self, msg):
         self.send_session()
         self.data_pipe_ctl.send(self.session)
+        i_wait = 0
+        while not self.data_pipe_ctl.poll():
+            i_wait += 1
+            if i_wait == 10:
+                return False
+            time.sleep(0.1)
+        print("Data process: ", self.data_pipe_ctl.recv())
         self.state.value = NSV_STATE_SESSION
         return True
 
@@ -264,7 +282,14 @@ class NeuroslaveImitator:
     def start_data_source(self):
         self.dataSource = MP_CTX.Process(target = data_process, args = (self.data_pipe_src, self.state))
         self.dataSource.start()
-        print("Data source started")
+        i_wait = 0
+        while not self.data_pipe_ctl.poll():
+            i_wait += 1
+            if i_wait == 10:
+                print("Data source failed on start")
+                return
+            time.sleep(0.1)
+        print("Data process: ", self.data_pipe_ctl.recv())
 
     def run(self):
         self.servSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
