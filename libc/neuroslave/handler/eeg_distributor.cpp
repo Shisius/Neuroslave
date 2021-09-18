@@ -53,6 +53,11 @@ void EegDistributor::finish_session()
 	d_state->store(nsv_set_state(d_state->load(std::memory_order_relaxed), NSV_STATE_SESSION, false), std::memory_order_relaxed);
 }
 
+void EegDistributor::prepare_record()
+{
+	
+}
+
 void EegDistributor::eeg_process()
 {
 	while (nsv_get_state(d_state->load(std::memory_order_relaxed), NSV_STATE_ALIVE)) {
@@ -76,6 +81,7 @@ void EegDistributor::eeg_process()
 						if (d_eeg_sample_queue->try_pop(d_eeg_pack)) {
 							// Send eeg pack
 							send_eeg_pack();
+							// Record
 						}
 						std::this_thread::sleep_for(std::chrono::microseconds(d_eeg_wait_us));
 					}
@@ -100,7 +106,7 @@ bool EegDistributor::send_eeg_pack()
 	int msg_size = sizeof(eeg_sample_t) * d_eeg_pack.header.n_samples * d_eeg_pack.header.n_channels + sizeof(d_eeg_pack.header);
 	char tmp_msg[msg_size];
 	memcpy(tmp_msg, &d_eeg_pack.header, sizeof(EegSampleHeader));
-	memcpy(tmp_msg + sizeof(EegSampleHeader), &d_eeg_pack.samples, sizeof(eeg_sample_t) * d_eeg_pack.header.n_samples * d_eeg_pack.header.n_channels);
+	memcpy(tmp_msg + sizeof(EegSampleHeader), d_eeg_pack.samples, sizeof(eeg_sample_t) * d_eeg_pack.header.n_samples * d_eeg_pack.header.n_channels);
 	while (bytes_sent < msg_size) {
 		bytes_sent += d_eeg_server->sendMessage(tmp_msg + bytes_sent, sizeof(tmp_msg) - bytes_sent);
 		if (bytes_sent == msg_size)

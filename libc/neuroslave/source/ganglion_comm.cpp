@@ -92,7 +92,7 @@ void GanglionComm::get_eeg_pack()
 			cur_mcp_sample.sample_index++;
 			for (int i = 0; i < GANGLION_N_ELECTRODES; i++)
 				cur_mcp_sample.eeg_data[i] = 1000 * std::sin(2 * M_PI * 
-					std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / 10000);
+					std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / 100000);
 			std::this_thread::sleep_for(std::chrono::microseconds(500));
 #endif
 		}	

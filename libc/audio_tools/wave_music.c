@@ -6,6 +6,15 @@ const char WAVE_FILE_TYPE_HEADER[4] = {'W', 'A', 'V', 'E'};
 const char WAVE_FILE_FMT_LABEL[4] = {'f', 'm', 't', ' '};
 const char WAVE_FILE_DATA_LABEL[4] = {'d', 'a', 't', 'a'};
 
+bool openWaveFile(FILE * mfile, const char * file_name) {
+	mfile = fopen(file_name, "rb");
+	if (mfile == NULL) {
+		printf("WaveMusic: error opening file %s\n", file_name);
+		return false;
+	}
+	return true;
+}
+
 /// Constructors
 bool readFileWaveMusic(WaveMusic * wave_music, const char * file_name)
 {
@@ -13,12 +22,14 @@ bool readFileWaveMusic(WaveMusic * wave_music, const char * file_name)
 	uint32_t full_file_size = 0; // without header
 	uint32_t section_size = 0;
 	char field_buffer4[4];
-	char field_buffer2[2];
+	// char field_buffer2[2];
 	char section_label[4];
 	// File name
 	wave_music->music_file_name = (char*) malloc(strlen(file_name));
 	strcpy(wave_music->music_file_name, file_name);
 	// Open file
+	// if (!(openWaveFile(wave_music->music_file, wave_music->music_file_name)))
+	// 	return false;
 	wave_music->music_file = fopen(wave_music->music_file_name, "rb");
 	if (wave_music->music_file == NULL) {
 		printf("WaveMusic: error opening file %s\n", file_name);
@@ -232,6 +243,6 @@ static int paStreamCallback(const void *inputBuffer, void *outputBuffer, unsigne
 
 static void paFinishedCallback(void* userData)
 {
-	WaveMusic * wave_music = (WaveMusic*)userData;
+	//WaveMusic * wave_music = (WaveMusic*)userData;
 	//wave_music->stop(wave_music);
 }
