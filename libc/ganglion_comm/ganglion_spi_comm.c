@@ -25,7 +25,7 @@ bool ganglion_spi_get_sample(McpSample * mcp_sample)
 	wiringPiSPIDataRW(GANGLION_SPI_CHANNEL, &command, sizeof(command));
 	if (command == GANGLION_ANS_READY) {
 		memset(mcp_sample, GANGLION_CMD_FETCH, sizeof(McpSample));
-		wiringPiSPIDataRW(GANGLION_SPI_CHANNEL, mcp_sample, sizeof(McpSample));
+		wiringPiSPIDataRW(GANGLION_SPI_CHANNEL, (unsigned char *)mcp_sample, sizeof(McpSample));
 		return true;
 	}
 	return false;
