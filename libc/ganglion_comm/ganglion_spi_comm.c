@@ -7,7 +7,7 @@ static uint32_t    spiSpeed;
 static int         spiFd;
 static int 		   spiChannel;
 
-int piSpiSetup(int _spi_channel, int _spi_speed, int mode = 0)
+int piSpiSetup(int channel, int speed, int mode)
 {
 	int fd ;
 	char spiDev [32] ;
@@ -54,7 +54,7 @@ int piSpiRW(unsigned char * data, int len)
 
 bool ganglion_spi_comm_setup(void)
 {
-	if (piSpiSetup (GANGLION_SPI_CHANNEL, GANGLION_SPI_SPEED) < 0)
+	if (piSpiSetup (GANGLION_SPI_CHANNEL, GANGLION_SPI_SPEED, 0) < 0)
 		return false;
 	return true;
 }
