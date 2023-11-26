@@ -4,8 +4,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include <wiringPi.h>
-#include <wiringPiSPI.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <asm/ioctl.h>
+#include <linux/spi/spidev.h>
 #include "ganglion_comm_defines.h"
 
 #define GANGLION_SPI_DELAY_US_DEFAULT 100
