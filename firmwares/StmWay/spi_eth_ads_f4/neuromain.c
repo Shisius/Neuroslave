@@ -1,7 +1,11 @@
 #if defined STM32F4
+    //#define USE_FULL_LL_DRIVER
     #include <stm32f4xx_ll_gpio.h>
+    #include <stm32f4xx_ll_bus.h>
     #include <stm32f4xx_ll_cortex.h>
     #include <stm32f4xx_ll_rcc.h>
+    #include <stm32f4xx_ll_spi.h>
+    
     // #include "stm32f4xx_hal.h"
 
     #define LED_PORT                GPIOC
@@ -11,10 +15,14 @@
 
 #include "eth/server_w5500.h"
 
+ServerW5500 srv;
+
 int main(void) 
 {
 
-    //HAL_Init();
+    srv = server_w5500_create();
+
+    int result = server_w5500_init(&srv);
 
     while (1) 
     {
