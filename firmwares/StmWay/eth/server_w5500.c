@@ -50,19 +50,26 @@ void W5500_WriteByte(uint8_t byte) {
     W5500_SpiXfer(byte);
 }
 
-ServerW5500 server_w5500_create()
-{
-	ServerW5500 srv;
-	//srv.spi_config = {0};
-	//srv.gpio_config = {0};
-	return srv;
-}
-
 int server_w5500_init(ServerW5500 * srv)
 {
 	LL_SPI_InitTypeDef spi_config = {0};
 	LL_APB1_GRP1_EnableClock(W5500_SPI_CLK);	
 	LL_AHB1_GRP1_EnableClock(W5500_SPI_CS_CLK);
+	// Init SPI GPIO
+	LL_GPIO_InitTypeDef gpio_config = {0};
+	gpio_config.Pin = W5500_SPI_GPIO;
+	gpio_config.Mode = LL_GPIO_MODE_ALTERNATE;
+	gpio_config.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+	gpio_config.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+	gpio_config.Pull = LL_GPIO_PULL_NO;
+	gpio_config.Alternate = LL_GPIO_AF_5;
+	LL_GPIO_Init(W5500_SPI_GPIO_PORT, &gpio_config);
+	gpio_config.Pin = W5500_SPI_CS_PIN;
+	gpio_config.Mode = LL_GPIO_MODE_OUTPUT;
+	gpio_config.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+	gpio_config.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+	gpio_config.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(W5500_SPI_CS_PORT, &gpio_config);
 	// Init SPI
 	spi_config.TransferDirection = LL_SPI_FULL_DUPLEX;
 	spi_config.Mode = LL_SPI_MODE_MASTER;
@@ -84,6 +91,21 @@ int server_w5500_init(ServerW5500 * srv)
 	// Init
 	uint8_t rx_tx_buff_sizes[] = {2, 2, 2, 2, 2, 2, 2, 2};
 	wizchip_init(rx_tx_buff_sizes, rx_tx_buff_sizes);
+	// Addr
+	uint8_t mask[4] = { 0xFF, 0xFF, 0xFF, 0x00 };
+	setSUBR(mask);
+	uint8_t mac[6] = { 0xEF, 0x23, 0x92, 0x39, 0xAB, 0xCD };
+	setSHAR(mac);
+	uint8_t addr[4] = { 192, 168, 0, 239 };
+	setSIPR(addr);
 	// Socket
+	srv->sock = 1;
+	if (socket(srv->sock, IPPROTO_TCP, SERVER_W5500_TCP_PORT, 0) != srv->sock) return -1;
 	return 0;
+}
+
+int server_w5500_accept(ServerW5500 * srv)
+{
+	if (listen(srv->sock) == SOCK_OK) return 0;
+	else return -1;
 }

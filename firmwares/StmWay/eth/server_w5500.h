@@ -14,6 +14,10 @@
 #define W5500_SPI_CS_PORT			GPIOB
 #define W5500_SPI_CLK 				LL_APB1_GRP1_PERIPH_SPI2
 #define W5500_SPI_CS_CLK			LL_AHB1_GRP1_PERIPH_GPIOB
+#define W5500_SPI_GPIO				(LL_GPIO_PIN_13 | LL_GPIO_PIN_14 | LL_GPIO_PIN_15)
+#define W5500_SPI_GPIO_PORT			GPIOB
+
+#define SERVER_W5500_TCP_PORT		23932
 
 unsigned char W5500_SpiXfer(unsigned char byte);
 uint8_t W5500_ReadByte(void);
@@ -30,8 +34,7 @@ typedef struct _server_w5500
 	uint8_t sock;
 } ServerW5500;
 
-ServerW5500 server_w5500_create();
-
 int server_w5500_init(ServerW5500 * srv);
+int server_w5500_accept(ServerW5500 * srv);
 
 #endif //_SERVER_W5500_H_

@@ -15,18 +15,51 @@
 
 #include "eth/server_w5500.h"
 
+typedef enum {
+    LED_STATE_NONE = 0,
+    LED_STATE_FAIL = 1,
+    LED_STATE_WIN = 2
+} LedStates;
+
+volatile int led_state = LED_STATE_NONE;
+
+void SysTick_Handler(void)
+{
+    static int counter = 0;
+    counter++;
+
+    // 1 Hz blinking
+    if ( ( (counter % 100) == 0) && (led_state == LED_STATE_FAIL) )
+        LL_GPIO_TogglePin(LED_PORT, LED_PIN);
+
+    if ( ( (counter % 1000) == 0) && (led_state == LED_STATE_WIN) )
+        LL_GPIO_TogglePin(LED_PORT, LED_PIN);
+}
+
+void fiasco()
+{
+    led_state = LED_STATE_FAIL;
+}
+
 ServerW5500 srv;
 
 int main(void) 
 {
 
-    srv = server_w5500_create();
+    LL_GPIO_SetPinMode(LED_PORT, LED_PIN, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinOutputType(LED_PORT, LED_PIN, LL_GPIO_OUTPUT_PUSHPULL);
 
     int result = server_w5500_init(&srv);
 
     while (1) 
     {
-        ;
+        result = server_w5500_accept(&srv);
+        if (result < 0) fiasco();
+        else led_state = LED_STATE_WIN;
+        uint8_t msg[4];
+        result = recv(srv.sock, msg, 4);
+        result = send(srv.sock, msg, 4);
+        close(srv.sock);
     }
 
 
