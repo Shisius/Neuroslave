@@ -87,7 +87,7 @@ int server_w5500_init(ServerW5500 * srv)
 	// register
 	reg_wizchip_cs_cbfunc(W5500_Select, W5500_Unselect);
 	reg_wizchip_spi_cbfunc(W5500_ReadByte, W5500_WriteByte);
-	reg_wizchip_spiburst_cbfunc(W5500_ReadBuff, W5500_WriteBuff);
+	// reg_wizchip_spiburst_cbfunc(W5500_ReadBuff, W5500_WriteBuff);
 	// Init
 	uint8_t rx_tx_buff_sizes[] = {2, 2, 2, 2, 2, 2, 2, 2};
 	wizchip_init(rx_tx_buff_sizes, rx_tx_buff_sizes);
@@ -96,11 +96,11 @@ int server_w5500_init(ServerW5500 * srv)
 	setSUBR(mask);
 	uint8_t mac[6] = { 0xEF, 0x23, 0x92, 0x39, 0xAB, 0xCD };
 	setSHAR(mac);
-	uint8_t addr[4] = { 192, 168, 0, 239 };
+	uint8_t addr[4] = { 169, 254, 178, 239 };
 	setSIPR(addr);
 	// Socket
 	srv->sock = 1;
-	if (socket(srv->sock, IPPROTO_TCP, SERVER_W5500_TCP_PORT, 0) != srv->sock) return -1;
+	// if (socket(srv->sock, Sn_MR_TCP, SERVER_W5500_TCP_PORT, SF_TCP_NODELAY|SF_IO_NONBLOCK) != srv->sock) return -1;
 	return 0;
 }
 

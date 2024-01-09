@@ -17,7 +17,7 @@
 #define W5500_SPI_GPIO				(LL_GPIO_PIN_13 | LL_GPIO_PIN_14 | LL_GPIO_PIN_15)
 #define W5500_SPI_GPIO_PORT			GPIOB
 
-#define SERVER_W5500_TCP_PORT		23932
+#define SERVER_W5500_TCP_PORT		9996
 
 unsigned char W5500_SpiXfer(unsigned char byte);
 uint8_t W5500_ReadByte(void);
