@@ -15,6 +15,7 @@
 #endif
 
 #include "eth/server_w5500.h"
+#include "spi/spi_ll_easy_api.h"
 
 typedef enum {
     LED_STATE_NONE = 0,
@@ -50,7 +51,9 @@ int main(void)
 {
 
     LED_PORT_CLK_ENABLE();
-    LL_Init1msTick(84000000UL);
+    LL_RCC_ClocksTypeDef rcc_clocks;
+    LL_RCC_GetSystemClocksFreq(&rcc_clocks);
+    LL_Init1msTick(rcc_clocks.HCLK_Frequency);
 
     LL_GPIO_SetPinMode(LED_PORT, LED_PIN, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinOutputType(LED_PORT, LED_PIN, LL_GPIO_OUTPUT_PUSHPULL);
@@ -58,7 +61,9 @@ int main(void)
     SystemCoreClockUpdate();
     SysTick_Config(SystemCoreClock / 1000);
 
-    int result = server_w5500_init(&srv);
+    ns_init_spi2_ll();
+
+    int result = server_w5500_init(&srv, ns_select_spi2_ll, ns_unselect_spi2_ll, ns_readbyte_spi2_ll, ns_writebyte_spi2_ll, LL_mDelay);
 
     LL_mDelay(500);
     LL_GPIO_TogglePin(LED_PORT, LED_PIN);

@@ -21,7 +21,7 @@ list(APPEND PROJECT_DIRS "../")
 set(SOURCE_LIST neuromain.c)
 list(APPEND SOURCE_LIST ${W5500_PATH}/wizchip_conf.c ${W5500_PATH}/socket.c ${W5500_PATH}/W5500/w5500.c)
 
-list(APPEND SOURCE_LIST ../eth/server_w5500.c)
+list(APPEND SOURCE_LIST ../eth/server_w5500.c ../spi/spi_ll_easy_api.c)
 
 # STM32F4-Discovery
 add_executable(${PROJECT_NAME} ${SOURCE_LIST})
